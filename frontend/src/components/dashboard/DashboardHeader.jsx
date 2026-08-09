@@ -1,23 +1,21 @@
-import { FaPlus } from "react-icons/fa";
-
 function DashboardHeader() {
+
+  const user = JSON.parse(localStorage.getItem("user"));
+
   return (
-    <div className="bg-white rounded-2xl shadow-md p-8 flex flex-col md:flex-row justify-between items-center">
+    <div className="bg-gradient-to-r from-teal-700 to-cyan-600 rounded-2xl lg:rounded-3xl p-5 sm:p-6 lg:p-8 text-white shadow-xl">
 
-      <div>
-        <h1 className="text-4xl font-bold text-slate-800">
-          Welcome Back, Hemangi 👋
-        </h1>
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
+        Welcome Back 👋
+      </h1>
 
-        <p className="mt-2 text-slate-500">
-          Here's what's happening across your projects today.
-        </p>
-      </div>
+      <p className="mt-2 sm:mt-3 text-base sm:text-lg text-teal-100 font-medium">
+        {user?.fullName}
+      </p>
 
-      <button className="mt-5 md:mt-0 flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl transition">
-        <FaPlus />
-        Create Project
-      </button>
+      <p className="mt-2 text-sm sm:text-base text-teal-100 max-w-2xl">
+        Manage your projects, team and tasks from one dashboard.
+      </p>
 
     </div>
   );

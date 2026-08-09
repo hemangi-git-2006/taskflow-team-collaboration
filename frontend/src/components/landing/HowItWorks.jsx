@@ -1,6 +1,6 @@
 import {
-  FaFolderPlus,
-  FaUserFriends,
+  FaUserPlus,
+  FaProjectDiagram,
   FaTasks,
   FaChartLine,
 } from "react-icons/fa";
@@ -8,64 +8,73 @@ import {
 function HowItWorks() {
   const steps = [
     {
-      icon: <FaFolderPlus size={35} />,
-      title: "Create Project",
-      desc: "Start a new project and add basic details.",
+      icon: <FaUserPlus size={40} />,
+      title: "1. Create an Account",
+      description:
+        "The admin registers and logs in to the TaskFlow platform.",
     },
     {
-      icon: <FaUserFriends size={35} />,
-      title: "Invite Members",
-      desc: "Invite teammates and assign their roles.",
+      icon: <FaProjectDiagram size={40} />,
+      title: "2. Create Projects",
+      description:
+        "Create projects and add team members to collaborate efficiently.",
     },
     {
-      icon: <FaTasks size={35} />,
-      title: "Assign Tasks",
-      desc: "Create tasks and assign them to your team.",
+      icon: <FaTasks size={40} />,
+      title: "3. Assign Tasks",
+      description:
+        "Assign tasks to members, set deadlines, and track task progress.",
     },
     {
-      icon: <FaChartLine size={35} />,
-      title: "Track Progress",
-      desc: "Monitor progress with dashboards and reports.",
+      icon: <FaChartLine size={40} />,
+      title: "4. Monitor Progress",
+      description:
+        "Track completed and pending tasks using the admin dashboard.",
     },
   ];
 
   return (
     <section
       id="how"
-      className="py-24 bg-slate-50"
+      className="py-20 bg-slate-100"
     >
       <div className="max-w-7xl mx-auto px-6">
 
-        <h2 className="text-5xl font-bold text-center text-slate-900">
-          How It Works
-        </h2>
+        <div className="text-center">
 
-        <p className="text-center text-slate-600 mt-5">
-          Manage your projects in four simple steps.
-        </p>
+          <h2 className="text-4xl font-bold text-slate-800">
+            How TaskFlow Works
+          </h2>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10 mt-16">
+          <p className="text-slate-500 mt-4">
+            Manage your projects in just four simple steps.
+          </p>
+
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
 
           {steps.map((step, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl shadow-lg p-8 text-center hover:-translate-y-2 transition duration-300"
+              className="bg-white rounded-2xl shadow-md p-8 text-center hover:shadow-xl transition duration-300"
             >
-              <div className="text-teal-600 flex justify-center">
+              <div className="text-teal-600 flex justify-center mb-6">
                 {step.icon}
               </div>
 
-              <h3 className="text-2xl font-semibold mt-6">
+              <h3 className="text-xl font-bold mb-3">
                 {step.title}
               </h3>
 
-              <p className="text-slate-600 mt-4">
-                {step.desc}
+              <p className="text-slate-500">
+                {step.description}
               </p>
             </div>
           ))}
 
         </div>
+
       </div>
     </section>
   );

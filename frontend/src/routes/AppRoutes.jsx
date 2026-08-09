@@ -11,8 +11,7 @@ import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
 import NotFound from "../pages/NotFound";
 
-import MainLayout from "../layouts/MainLayout";
-import AuthLayout from "../layouts/AuthLayout";
+
 
 function AppRoutes() {
   return (

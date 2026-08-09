@@ -1,76 +1,95 @@
 import {
-  FaUsers,
   FaTasks,
+  FaUsers,
   FaChartLine,
   FaBell,
+  FaProjectDiagram,
+  FaShieldAlt,
 } from "react-icons/fa";
 
 function Features() {
   const features = [
     {
-      icon: <FaUsers size={40} />,
+      icon: <FaProjectDiagram size={35} />,
+      title: "Project Management",
+      description:
+        "Create multiple projects, organize work, and track project progress with ease.",
+    },
+    {
+      icon: <FaTasks size={35} />,
+      title: "Task Assignment",
+      description:
+        "Assign tasks to team members, set priorities, and manage deadlines efficiently.",
+    },
+    {
+      icon: <FaUsers size={35} />,
       title: "Team Collaboration",
       description:
-        "Invite teammates, assign roles, and work together in real time.",
+        "Work together with your team and keep everyone updated in real time.",
     },
     {
-      icon: <FaTasks size={40} />,
-      title: "Task Management",
-      description:
-        "Create, assign, and organize tasks with deadlines and priorities.",
-    },
-    {
-      icon: <FaChartLine size={40} />,
+      icon: <FaChartLine size={35} />,
       title: "Progress Tracking",
       description:
-        "Monitor project completion with visual progress indicators.",
+        "Monitor completed, pending, and in-progress tasks using interactive dashboards.",
     },
     {
-      icon: <FaBell size={40} />,
+      icon: <FaBell size={35} />,
       title: "Notifications",
       description:
-        "Never miss deadlines or important project updates.",
+        "Receive instant notifications whenever a task is assigned or completed.",
+    },
+    {
+      icon: <FaShieldAlt size={35} />,
+      title: "Secure Access",
+      description:
+        "Role-based authentication ensures only authorized users can access projects.",
     },
   ];
 
   return (
     <section
       id="features"
-      className="py-24 bg-white"
+      className="py-20 bg-white"
     >
       <div className="max-w-7xl mx-auto px-6">
 
-        <h2 className="text-5xl font-bold text-center text-slate-900">
-          Everything you need
-        </h2>
+        <div className="text-center">
 
-        <p className="text-center text-slate-600 mt-5 max-w-2xl mx-auto">
-          Powerful tools designed for teams to collaborate,
-          organize work, and deliver projects efficiently.
-        </p>
+          <h2 className="text-4xl font-bold text-slate-800">
+            Powerful Features
+          </h2>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
+          <p className="text-slate-500 mt-4 max-w-2xl mx-auto">
+            Everything you need to manage projects, collaborate with your team,
+            and deliver work on time.
+          </p>
 
-          {features.map((item, index) => (
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
+
+          {features.map((feature, index) => (
             <div
               key={index}
               className="bg-slate-50 rounded-2xl p-8 shadow hover:shadow-xl transition duration-300"
             >
-              <div className="text-teal-600">
-                {item.icon}
+              <div className="text-teal-600 mb-5">
+                {feature.icon}
               </div>
 
-              <h3 className="text-xl font-semibold mt-6">
-                {item.title}
+              <h3 className="text-2xl font-semibold mb-3">
+                {feature.title}
               </h3>
 
-              <p className="text-slate-600 mt-4">
-                {item.description}
+              <p className="text-slate-500">
+                {feature.description}
               </p>
             </div>
           ))}
 
         </div>
+
       </div>
     </section>
   );
