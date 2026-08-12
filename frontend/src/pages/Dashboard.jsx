@@ -69,10 +69,13 @@ function Dashboard() {
           <QuickActions />
         </div>
 
-        <div>
-          <ActivityFeed />
-        </div>
-
+       <div>
+  <ActivityFeed
+    projects={projects}
+    members={members}
+    tasks={tasks}
+  />
+</div>
       </div>
 
     </div>

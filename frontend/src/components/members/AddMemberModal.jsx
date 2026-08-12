@@ -6,70 +6,76 @@ function AddMemberModal({
   projectId,
   refreshMembers,
 }) {
-  const [formData, setFormData] = useState({
-    employeeId: "",
-    fullName: "",
-    email: "",
-    password: "",
-  });
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] =
+    useState(null);
 
   const [loading, setLoading] = useState(false);
 
-  // Fetch next Employee ID
+  // Fetch Existing Employees
   useEffect(() => {
-    const getEmployeeId = async () => {
+    const getEmployees = async () => {
       try {
-        const res = await API.get("/members/next-id");
+        const res = await API.get("/members");
 
-        setFormData((prev) => ({
-          ...prev,
-          employeeId: res.data.employeeId,
-        }));
+        setEmployees(res.data);
       } catch (error) {
-        console.log(error);
+        console.log(
+          "GET EMPLOYEES ERROR:",
+          error
+        );
       }
     };
 
-    getEmployeeId();
+    getEmployees();
   }, []);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  // Select Employee
+  const handleEmployeeChange = (e) => {
+    const employeeId = e.target.value;
+
+    const employee = employees.find(
+      (emp) =>
+        emp.employeeId === employeeId
+    );
+
+    setSelectedEmployee(employee || null);
   };
 
+  // Add Existing Employee To Project
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!selectedEmployee) {
+      alert("Please select an employee");
+      return;
+    }
 
     try {
       setLoading(true);
 
       await API.post("/members", {
-        fullName: formData.fullName,
-        email: formData.email,
-        password: formData.password,
+        employeeId:
+          selectedEmployee.employeeId,
+
         projectId,
       });
 
-      alert("Member Added Successfully");
+      alert(
+        "Member Added To Project Successfully"
+      );
 
       refreshMembers();
 
       closeModal();
 
     } catch (error) {
-
       alert(
         error.response?.data?.message ||
         "Failed to add member"
       );
-
     } finally {
-
       setLoading(false);
-
     }
   };
 
@@ -87,6 +93,44 @@ function AddMemberModal({
           className="space-y-5"
         >
 
+          {/* Select Employee */}
+
+          <div>
+
+            <label className="block mb-2 font-medium text-slate-700">
+              Select Employee
+            </label>
+
+            <select
+              value={
+                selectedEmployee?.employeeId ||
+                ""
+              }
+              onChange={handleEmployeeChange}
+              className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+              required
+            >
+
+              <option value="">
+                Select an employee
+              </option>
+
+              {employees.map((employee) => (
+
+                <option
+                  key={employee._id}
+                  value={employee.employeeId}
+                >
+                  {employee.fullName} -{" "}
+                  {employee.employeeId}
+                </option>
+
+              ))}
+
+            </select>
+
+          </div>
+
           {/* Employee ID */}
 
           <div>
@@ -97,8 +141,12 @@ function AddMemberModal({
 
             <input
               type="text"
-              value={formData.employeeId}
+              value={
+                selectedEmployee?.employeeId ||
+                ""
+              }
               readOnly
+              placeholder="Employee ID"
               className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 text-slate-600 cursor-not-allowed"
             />
 
@@ -114,12 +162,13 @@ function AddMemberModal({
 
             <input
               type="text"
-              name="fullName"
-              placeholder="Enter Full Name"
-              value={formData.fullName}
-              onChange={handleChange}
-              className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              required
+              value={
+                selectedEmployee?.fullName ||
+                ""
+              }
+              readOnly
+              placeholder="Full Name"
+              className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 text-slate-600 cursor-not-allowed"
             />
 
           </div>
@@ -134,35 +183,38 @@ function AddMemberModal({
 
             <input
               type="email"
-              name="email"
-              placeholder="Enter Email Address"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              required
+              value={
+                selectedEmployee?.email || ""
+              }
+              readOnly
+              placeholder="Email Address"
+              className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 text-slate-600 cursor-not-allowed"
             />
 
           </div>
 
-          {/* Password */}
+          {/* Selected Employee Information */}
 
-          <div>
+          {selectedEmployee && (
 
-            <label className="block mb-2 font-medium text-slate-700">
-              Password
-            </label>
+            <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
 
-            <input
-              type="password"
-              name="password"
-              placeholder="Enter Password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              required
-            />
+              <p className="text-sm text-teal-700">
+                You are adding:
+              </p>
 
-          </div>
+              <p className="font-bold text-slate-800 mt-1">
+                {selectedEmployee.fullName}
+              </p>
+
+              <p className="text-sm text-slate-600 mt-1">
+                Employee ID:{" "}
+                {selectedEmployee.employeeId}
+              </p>
+
+            </div>
+
+          )}
 
           {/* Buttons */}
 
@@ -178,10 +230,14 @@ function AddMemberModal({
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full sm:w-auto bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition"
+              disabled={
+                loading || !selectedEmployee
+              }
+              className="w-full sm:w-auto bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Adding..." : "Add Member"}
+              {loading
+                ? "Adding..."
+                : "Add Member"}
             </button>
 
           </div>

@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
 import API from "../services/api";
 
 import EmployeeSidebar from "../components/employee/EmployeeSidebar";
@@ -12,9 +18,10 @@ import EmployeeActivity from "../components/employee/EmployeeActivity";
 
 function EmployeeDashboard() {
 
-  const user = JSON.parse(
-    localStorage.getItem("user")
-  );
+  const user =
+    JSON.parse(localStorage.getItem("user"));
+    console.log("CURRENT USER:", user);
+console.log("CURRENT USER ID:", user?._id);
 
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -23,43 +30,52 @@ function EmployeeDashboard() {
   const [selectedProject, setSelectedProject] =
     useState("");
 
+  const [activeSection, setActiveSection] =
+    useState("dashboard");
+
+  // ============================
+  // Section References
+  // ============================
+
+  const dashboardRef = useRef(null);
+  const projectsRef = useRef(null);
+  const tasksRef = useRef(null);
+  const teamRef = useRef(null);
+  const profileRef = useRef(null);
+
   // ============================
   // Fetch Dashboard
   // ============================
+
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
 
   const fetchDashboard = async () => {
 
     try {
 
-      if (!user?._id) {
-        return;
-      }
-
       const res = await API.get(
         `/tasks/member/${user._id}`
       );
 
-      const taskData = res.data || [];
+      setTasks(res.data);
 
-      setTasks(taskData);
+      // Create unique project list
 
-      // Get unique projects
       const uniqueProjects = [];
 
-      taskData.forEach((task) => {
+      res.data.forEach((task) => {
 
         if (
           task.project &&
-          !uniqueProjects.some(
+          !uniqueProjects.find(
             (project) =>
-              project._id ===
-              task.project._id
+              project._id === task.project._id
           )
         ) {
 
-          uniqueProjects.push(
-            task.project
-          );
+          uniqueProjects.push(task.project);
 
         }
 
@@ -69,90 +85,49 @@ function EmployeeDashboard() {
 
     } catch (error) {
 
-      console.log(
-        "Dashboard Error:",
-        error
-      );
+      console.log(error);
 
     }
-
   };
-
-  // ============================
-  // Initial Fetch
-  // ============================
-
-  useEffect(() => {
-
-    fetchDashboard();
-
-  }, []);
 
   // ============================
   // Get Team Members
   // ============================
 
-  const getMembers = async () => {
-
-    try {
-
-      if (!selectedProject) {
-
-        setMembers([]);
-
-        return;
-
-      }
-
-      const res = await API.get(
-        `/members/${selectedProject}`
-      );
-
-      setMembers(
-        res.data || []
-      );
-
-    } catch (error) {
-
-      console.log(
-        "Members Error:",
-        error
-      );
-
-      setMembers([]);
-
-    }
-
-  };
-
   useEffect(() => {
+  getMembers();
+}, []);
 
-    getMembers();
+const getMembers = async () => {
+  try {
+    const res = await API.get(
+      `/members/user/${user._id}`
+    );
 
-  }, [selectedProject]);
+    console.log("TEAM MEMBERS FROM API:", res.data);
 
+    setMembers(res.data);
+
+  } catch (error) {
+    console.log("GET MEMBERS ERROR:", error);
+  }
+};
   // ============================
-  // Filter Tasks
+  // Filter Tasks By Project
   // ============================
 
   const filteredTasks = useMemo(() => {
 
     if (!selectedProject) {
-
       return tasks;
-
     }
 
     return tasks.filter(
       (task) =>
-        task.project?._id ===
-        selectedProject
+        task.project?._id === selectedProject
     );
 
-  }, [
-    tasks,
-    selectedProject,
-  ]);
+  }, [tasks, selectedProject]);
 
   // ============================
   // Statistics
@@ -170,110 +145,236 @@ function EmployeeDashboard() {
         task.status !== "Completed"
     ).length;
 
+  // ============================
+  // Scroll To Section
+  // ============================
+
+  const scrollToSection = (section) => {
+
+    const refs = {
+      dashboard: dashboardRef,
+      projects: projectsRef,
+      tasks: tasksRef,
+      team: teamRef,
+      profile: profileRef,
+    };
+
+    const selectedRef = refs[section];
+
+    if (selectedRef?.current) {
+
+      selectedRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+
+      setActiveSection(section);
+    }
+  };
+
+  // ============================
+  // Detect Section While Scrolling
+  // ============================
+
+  useEffect(() => {
+
+    const sections = [
+      {
+        name: "dashboard",
+        ref: dashboardRef,
+      },
+      {
+        name: "projects",
+        ref: projectsRef,
+      },
+      {
+        name: "tasks",
+        ref: tasksRef,
+      },
+      {
+        name: "team",
+        ref: teamRef,
+      },
+      {
+        name: "profile",
+        ref: profileRef,
+      },
+    ];
+
+    const handleScroll = () => {
+
+      const scrollPosition =
+        window.scrollY + 200;
+
+      let currentSection =
+        "dashboard";
+
+      sections.forEach((section) => {
+
+        if (
+          section.ref.current &&
+          section.ref.current.offsetTop <=
+            scrollPosition
+        ) {
+
+          currentSection =
+            section.name;
+
+        }
+
+      });
+
+      setActiveSection(currentSection);
+    };
+
+    window.addEventListener(
+      "scroll",
+      handleScroll
+    );
+
+    return () => {
+
+      window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
+
+    };
+
+  }, []);
+
   return (
 
     <div className="min-h-screen bg-slate-100">
 
-      {/* Sidebar */}
+      {/* ============================
+          Sidebar
+      ============================ */}
 
-      <EmployeeSidebar />
+      <EmployeeSidebar
+        scrollToSection={scrollToSection}
+        activeSection={activeSection}
+      />
 
-      {/* Main Content */}
+      {/* ============================
+          Main Content
+      ============================ */}
 
       <main
         className="
-          min-h-screen
-          ml-0
           lg:ml-64
-          pt-20
-          lg:pt-6
-          px-4
-          sm:px-6
-          lg:px-8
-          pb-10
+          pt-16
+          lg:pt-0
         "
       >
 
-        <div
-          className="
-            w-full
-            max-w-[1600px]
-            mx-auto
-            space-y-8
-          "
-        >
+        <div className="p-4 sm:p-6 lg:p-8 space-y-8">
 
-          {/* Header */}
+          {/* ============================
+              Dashboard Section
+          ============================ */}
 
-          <EmployeeHeader />
+          <section
+            ref={dashboardRef}
+            className="scroll-mt-20"
+          >
 
-          {/* Statistics */}
+            <EmployeeHeader />
 
-          <EmployeeStats
-            totalTasks={
-              filteredTasks.length
-            }
-            completedTasks={
-              completedTasks
-            }
-            pendingTasks={
-              pendingTasks
-            }
-            totalProjects={
-              projects.length
-            }
-          />
+            <div className="mt-8">
 
-          {/* Projects */}
+              <EmployeeStats
+                totalTasks={
+                  filteredTasks.length
+                }
+                completedTasks={
+                  completedTasks
+                }
+                pendingTasks={
+                  pendingTasks
+                }
+                totalProjects={
+                  projects.length
+                }
+              />
 
-          <EmployeeProjectSelector
-            projects={projects}
-            tasks={tasks}
-            selectedProject={
-              selectedProject
-            }
-            setSelectedProject={
-              setSelectedProject
-            }
-          />
+            </div>
 
-          {/* Tasks */}
+          </section>
 
-          <EmployeeTaskList
-            tasks={filteredTasks}
-            projects={projects}
-            refreshTasks={
-              fetchDashboard
-            }
-          />
+          {/* ============================
+              Projects Section
+          ============================ */}
 
-          {/* Team */}
+          <section
+            ref={projectsRef}
+            className="scroll-mt-20"
+          >
 
-          <EmployeeTeam
-            members={members}
-          />
+            <EmployeeProjectSelector
+              projects={projects}
+              selectedProject={
+                selectedProject
+              }
+              setSelectedProject={
+                setSelectedProject
+              }
+            />
 
-          {/* Activity */}
+          </section>
 
-          <EmployeeActivity
-            tasks={filteredTasks}
-          />
+         
 
-          {/* Profile */}
+          {/* ============================
+              Team Section
+          ============================ */}
 
-          <EmployeeProfile
-            user={user}
-            totalProjects={
-              projects.length
-            }
-          />
+          <section
+            ref={teamRef}
+            className="scroll-mt-20"
+          >
+
+            <EmployeeTeam
+              members={members}
+            />
+
+          </section>
+
+          {/* ============================
+              Activity
+          ============================ */}
+
+          <section>
+
+            <EmployeeActivity
+              tasks={filteredTasks}
+            />
+
+          </section>
+
+          {/* ============================
+              Profile Section
+          ============================ */}
+
+          <section
+            ref={profileRef}
+            className="scroll-mt-20"
+          >
+
+            <EmployeeProfile
+              user={user}
+              totalProjects={
+                projects.length
+              }
+            />
+
+          </section>
 
         </div>
 
       </main>
 
     </div>
-
   );
 }
 

@@ -1,5 +1,9 @@
-import { useState } from "react";
-import { FaSearch, FaTasks } from "react-icons/fa";
+import { useEffect, useRef, useState } from "react";
+import {
+  FaSearch,
+  FaTasks,
+} from "react-icons/fa";
+
 import EmployeeTaskCard from "./EmployeeTaskCard";
 
 function EmployeeTaskList({
@@ -12,13 +16,15 @@ function EmployeeTaskList({
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [dateFilter, setDateFilter] = useState("All");
   const [projectFilter, setProjectFilter] = useState("All");
+  const tableContainerRef = useRef(null);
 
-  // ============================
-  // Filter Tasks
-  // ============================
+
+
+  // ================================
+  // FILTER TASKS
+  // ================================
 
   const filteredTasks = tasks.filter((task) => {
-
     // Search
     const matchSearch =
       task.title
@@ -46,28 +52,21 @@ function EmployeeTaskList({
     // Date
     let matchDate = true;
 
-    if (dateFilter !== "All" && task.deadline) {
-
+    if (dateFilter !== "All") {
       const today = new Date();
-
       today.setHours(0, 0, 0, 0);
 
       const taskDate = new Date(task.deadline);
-
       taskDate.setHours(0, 0, 0, 0);
 
       switch (dateFilter) {
-
         case "Today":
-
           matchDate =
             taskDate.getTime() ===
             today.getTime();
-
           break;
 
         case "Yesterday": {
-
           const yesterday = new Date(today);
 
           yesterday.setDate(
@@ -82,7 +81,6 @@ function EmployeeTaskList({
         }
 
         case "Last 7 Days": {
-
           const last7 = new Date(today);
 
           last7.setDate(
@@ -97,19 +95,16 @@ function EmployeeTaskList({
         }
 
         case "This Month":
-
           matchDate =
             taskDate.getMonth() ===
-              today.getMonth() &&
+            today.getMonth() &&
             taskDate.getFullYear() ===
-              today.getFullYear();
+            today.getFullYear();
 
           break;
 
         default:
-
           matchDate = true;
-
       }
     }
 
@@ -121,378 +116,389 @@ function EmployeeTaskList({
       matchProject
     );
   });
-
+    useEffect(() => {
+      if (tableContainerRef.current) {
+        tableContainerRef.current.scrollLeft = 0;
+      }
+    }, [filteredTasks]);
   return (
-    <div className="bg-white rounded-3xl shadow-lg border border-slate-200 p-5 sm:p-6">
+    <section className="w-full">
 
-      {/* ============================
-          Header
-      ============================ */}
+      {/* ================================= */}
+      {/* HEADER */}
+      {/* ================================= */}
 
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6 mb-8">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 sm:p-7 lg:p-8">
 
         {/* Title */}
 
-        <div className="shrink-0">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
 
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center gap-3">
+          <div>
+            <div className="flex items-center gap-3">
 
-            <FaTasks className="text-teal-600" />
+              <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
 
-            <span>
-              My Tasks
+                <FaTasks className="text-teal-600 text-xl" />
+
+              </div>
+
+              <div>
+
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">
+                  My Tasks
+                </h2>
+
+                <p className="text-slate-500 text-sm sm:text-base mt-1">
+                  All tasks assigned to you
+                </p>
+
+              </div>
+
+            </div>
+          </div>
+
+          {/* Task Count */}
+
+          <div className="bg-slate-100 rounded-xl px-5 py-3 w-fit">
+
+            <span className="text-2xl font-bold text-slate-800">
+              {filteredTasks.length}
             </span>
 
-          </h2>
+            <span className="text-slate-500 ml-2">
+              Task{filteredTasks.length !== 1 ? "s" : ""}
+            </span>
 
-          <p className="text-slate-500 mt-2">
-            {filteredTasks.length} Task(s) Found
-          </p>
+          </div>
 
         </div>
 
-        {/* ============================
-            Filters
-        ============================ */}
 
-        <div
-          className="
-            grid
-            grid-cols-1
-            sm:grid-cols-2
-            lg:grid-cols-3
-            xl:grid-cols-5
-            gap-3
-            w-full
-            xl:w-auto
-          "
-        >
+        {/* ================================= */}
+        {/* FILTERS */}
+        {/* ================================= */}
 
-          {/* Search */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-7">
 
-          <div className="relative w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
-            <FaSearch
-              className="
-                absolute
-                left-4
-                top-1/2
-                -translate-y-1/2
-                text-slate-400
-              "
-            />
+            {/* Search */}
 
-            <input
-              type="text"
-              placeholder="Search task..."
-              value={search}
+            <div className="relative lg:col-span-1">
+
+              <FaSearch
+                className="
+                  absolute
+                  left-4
+                  top-1/2
+                  -translate-y-1/2
+                  text-slate-400
+                "
+              />
+
+              <input
+                type="text"
+                placeholder="Search task..."
+                value={search}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
+                className="
+                  w-full
+                  h-12
+                  bg-white
+                  border
+                  border-slate-300
+                  rounded-xl
+                  pl-11
+                  pr-4
+                  text-sm
+                  text-slate-700
+                  placeholder:text-slate-400
+                  focus:ring-2
+                  focus:ring-teal-500
+                  focus:border-teal-500
+                  outline-none
+                  transition
+                "
+              />
+
+            </div>
+
+
+            {/* Status */}
+
+            <select
+              value={statusFilter}
               onChange={(e) =>
-                setSearch(e.target.value)
+                setStatusFilter(e.target.value)
               }
               className="
                 w-full
+                h-12
+                bg-white
                 border
                 border-slate-300
                 rounded-xl
-                pl-11
-                pr-4
-                py-3
+                px-4
+                text-sm
+                text-slate-700
                 focus:ring-2
                 focus:ring-teal-500
                 focus:border-teal-500
                 outline-none
               "
-            />
+            >
+
+              <option value="All">
+                All Status
+              </option>
+
+              <option value="Todo">
+                Todo
+              </option>
+
+              <option value="In Progress">
+                In Progress
+              </option>
+
+              <option value="Completed">
+                Completed
+              </option>
+
+            </select>
+
+
+            {/* Priority */}
+
+            <select
+              value={priorityFilter}
+              onChange={(e) =>
+                setPriorityFilter(e.target.value)
+              }
+              className="
+                w-full
+                h-12
+                bg-white
+                border
+                border-slate-300
+                rounded-xl
+                px-4
+                text-sm
+                text-slate-700
+                focus:ring-2
+                focus:ring-teal-500
+                focus:border-teal-500
+                outline-none
+              "
+            >
+
+              <option value="All">
+                All Priority
+              </option>
+
+              <option value="High">
+                High
+              </option>
+
+              <option value="Medium">
+                Medium
+              </option>
+
+              <option value="Low">
+                Low
+              </option>
+
+            </select>
+
+
+            {/* Project */}
+
+            <select
+              value={projectFilter}
+              onChange={(e) =>
+                setProjectFilter(e.target.value)
+              }
+              className="
+                w-full
+                h-12
+                bg-white
+                border
+                border-slate-300
+                rounded-xl
+                px-4
+                text-sm
+                text-slate-700
+                focus:ring-2
+                focus:ring-teal-500
+                focus:border-teal-500
+                outline-none
+              "
+            >
+
+              <option value="All">
+                All Projects
+              </option>
+
+              {projects.map((project) => (
+                <option
+                  key={project._id}
+                  value={project._id}
+                >
+                  {project.name}
+                </option>
+              ))}
+
+            </select>
 
           </div>
 
-          {/* Status */}
 
-          <select
-            value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value)
-            }
-            className="
-              w-full
-              border
-              border-slate-300
-              rounded-xl
-              px-4
-              py-3
-              focus:ring-2
-              focus:ring-teal-500
-              focus:border-teal-500
-              outline-none
-              bg-white
-            "
-          >
+          {/* Date filter */}
 
-            <option value="All">
-              All Status
-            </option>
+          <div className="mt-3">
 
-            <option value="Todo">
-              Todo
-            </option>
+            <select
+              value={dateFilter}
+              onChange={(e) =>
+                setDateFilter(e.target.value)
+              }
+              className="
+                w-full
+                sm:w-auto
+                min-w-[180px]
+                h-12
+                bg-white
+                border
+                border-slate-300
+                rounded-xl
+                px-4
+                text-sm
+                text-slate-700
+                focus:ring-2
+                focus:ring-teal-500
+                focus:border-teal-500
+                outline-none
+              "
+            >
 
-            <option value="In Progress">
-              In Progress
-            </option>
-
-            <option value="Completed">
-              Completed
-            </option>
-
-          </select>
-
-          {/* Priority */}
-
-          <select
-            value={priorityFilter}
-            onChange={(e) =>
-              setPriorityFilter(e.target.value)
-            }
-            className="
-              w-full
-              border
-              border-slate-300
-              rounded-xl
-              px-4
-              py-3
-              focus:ring-2
-              focus:ring-teal-500
-              focus:border-teal-500
-              outline-none
-              bg-white
-            "
-          >
-
-            <option value="All">
-              All Priority
-            </option>
-
-            <option value="High">
-              High
-            </option>
-
-            <option value="Medium">
-              Medium
-            </option>
-
-            <option value="Low">
-              Low
-            </option>
-
-          </select>
-
-          {/* Project */}
-
-          <select
-            value={projectFilter}
-            onChange={(e) =>
-              setProjectFilter(e.target.value)
-            }
-            className="
-              w-full
-              border
-              border-slate-300
-              rounded-xl
-              px-4
-              py-3
-              focus:ring-2
-              focus:ring-teal-500
-              focus:border-teal-500
-              outline-none
-              bg-white
-            "
-          >
-
-            <option value="All">
-              All Projects
-            </option>
-
-            {projects.map((project) => (
-
-              <option
-                key={project._id}
-                value={project._id}
-              >
-                {project.name}
+              <option value="All">
+                All Time
               </option>
 
-            ))}
+              <option value="Today">
+                Today
+              </option>
 
-          </select>
+              <option value="Yesterday">
+                Yesterday
+              </option>
 
-          {/* Date */}
+              <option value="Last 7 Days">
+                Last 7 Days
+              </option>
 
-          <select
-            value={dateFilter}
-            onChange={(e) =>
-              setDateFilter(e.target.value)
-            }
-            className="
-              w-full
-              border
-              border-slate-300
-              rounded-xl
-              px-4
-              py-3
-              focus:ring-2
-              focus:ring-teal-500
-              focus:border-teal-500
-              outline-none
-              bg-white
-            "
-          >
+              <option value="This Month">
+                This Month
+              </option>
 
-            <option value="All">
-              All Time
-            </option>
+            </select>
 
-            <option value="Today">
-              Today
-            </option>
-
-            <option value="Yesterday">
-              Yesterday
-            </option>
-
-            <option value="Last 7 Days">
-              Last 7 Days
-            </option>
-
-            <option value="This Month">
-              This Month
-            </option>
-
-          </select>
+          </div>
 
         </div>
 
-      </div>
 
-      {/* ============================
-          Task Table
-      ============================ */}
+        {/* ================================= */}
+        {/* TABLE */}
+        {/* ================================= */}
 
-      <div
-        className="
-          w-full
-          overflow-x-auto
-          rounded-2xl
-          border
-          border-slate-200
-          bg-white
-        "
-      >
+       <div className="w-full rounded-2xl border border-slate-200 overflow-hidden">
 
-        <table
-          className="
-            min-w-[1000px]
-            w-full
-            border-collapse
-          "
-        >
+          <table className="w-full table-fixed">
 
-          {/* Table Header */}
+           <thead className="bg-slate-900 text-white">
+  <tr>
 
-          <thead className="bg-slate-900 text-white">
+    <th className="w-[18%] text-left px-2 sm:px-4 py-4 text-xs sm:text-sm">
+      Task
+    </th>
 
-            <tr>
+    <th className="w-[13%] text-left px-2 sm:px-4 py-4 text-xs sm:text-sm">
+      Project
+    </th>
 
-              <th className="text-left px-5 py-4 whitespace-nowrap">
-                Task
-              </th>
+    <th className="w-[18%] text-left px-2 sm:px-4 py-4 text-xs sm:text-sm">
+      Assigned By
+    </th>
 
-              <th className="text-left px-5 py-4 whitespace-nowrap">
-                Project
-              </th>
+    <th className="w-[11%] text-left px-2 sm:px-4 py-4 text-xs sm:text-sm">
+      Priority
+    </th>
 
-              <th className="text-left px-5 py-4 whitespace-nowrap">
-                Assigned By
-              </th>
+    <th className="w-[15%] text-left px-2 sm:px-4 py-4 text-xs sm:text-sm">
+      Deadline
+    </th>
 
-              <th className="text-left px-5 py-4 whitespace-nowrap">
-                Priority
-              </th>
+    <th className="w-[11%] text-left px-2 sm:px-4 py-4 text-xs sm:text-sm">
+      Status
+    </th>
 
-              <th className="text-left px-5 py-4 whitespace-nowrap">
-                Deadline
-              </th>
+    <th className="w-[14%] text-center px-2 sm:px-4 py-4 text-xs sm:text-sm">
+      Action
+    </th>
 
-              <th className="text-left px-5 py-4 whitespace-nowrap">
-                Status
-              </th>
+  </tr>
+</thead>
+            <tbody>
 
-              <th className="text-center px-5 py-4 whitespace-nowrap">
-                Action
-              </th>
+              {filteredTasks.length === 0 ? (
 
-            </tr>
+                <tr>
 
-          </thead>
+                  <td
+                    colSpan="7"
+                    className="text-center py-16 text-slate-500"
+                  >
 
-          {/* Table Body */}
+                    <FaTasks className="text-5xl text-slate-300 mx-auto mb-4" />
 
-          <tbody>
-
-            {filteredTasks.length === 0 ? (
-
-              <tr>
-
-                <td
-                  colSpan="7"
-                  className="text-center py-16 text-slate-500"
-                >
-
-                  <div className="flex flex-col items-center">
-
-                    <FaTasks
-                      className="
-                        text-5xl
-                        sm:text-6xl
-                        text-slate-300
-                        mb-4
-                      "
-                    />
-
-                    <h2 className="text-xl sm:text-2xl font-bold">
+                    <h3 className="text-xl font-semibold text-slate-700">
                       No Tasks Found
-                    </h2>
+                    </h3>
 
                     <p className="mt-2">
                       Try changing your filters.
                     </p>
 
-                  </div>
+                  </td>
 
-                </td>
+                </tr>
 
-              </tr>
+              ) : (
 
-            ) : (
+                filteredTasks.map((task) => (
 
-              filteredTasks.map((task) => (
+                  <EmployeeTaskCard
+                    key={task._id}
+                    task={task}
+                    refreshTasks={refreshTasks}
+                  />
 
-                <EmployeeTaskCard
-                  key={task._id}
-                  task={task}
-                  refreshTasks={refreshTasks}
-                />
+                ))
 
-              ))
+              )}
 
-            )}
+            </tbody>
 
-          </tbody>
+          </table>
 
-        </table>
+        </div>
 
       </div>
 
-    </div>
+    </section>
   );
 }
 

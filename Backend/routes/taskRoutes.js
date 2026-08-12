@@ -1,4 +1,5 @@
 import express from "express";
+
 import {
   createTask,
   getTasks,
@@ -8,23 +9,76 @@ import {
   updateTask,
   deleteTask,
   updateTaskStatus,
+  shareTask,
 } from "../controllers/taskController.js";
 
 const router = express.Router();
 
+// ============================
+// Create Task
+// ============================
+
 router.post("/", createTask);
 
+// ============================
+// Get Tasks
+// ============================
+
 router.get("/", getTasks);
-router.get("/project/:projectId", getProjectTasks);
-router.get("/member/:userId", getMemberTasks);
 
-router.get("/:id", getTaskById);
+router.get(
+  "/project/:projectId",
+  getProjectTasks
+);
 
-router.put("/:id", updateTask);
+router.get(
+  "/member/:userId",
+  getMemberTasks
+);
 
-router.put("/:id/status", updateTaskStatus);
+// ============================
+// Share Task
+// ============================
 
-router.delete("/:id", deleteTask);
+router.post(
+  "/share",
+  shareTask
+);
 
+// ============================
+// Single Task
+// ============================
+
+router.get(
+  "/:id",
+  getTaskById
+);
+
+// ============================
+// Update Task
+// ============================
+
+router.put(
+  "/:id",
+  updateTask
+);
+
+// ============================
+// Update Task Status
+// ============================
+
+router.put(
+  "/:id/status",
+  updateTaskStatus
+);
+
+// ============================
+// Delete Task
+// ============================
+
+router.delete(
+  "/:id",
+  deleteTask
+);
 
 export default router;

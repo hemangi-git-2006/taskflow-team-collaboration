@@ -46,6 +46,33 @@ const taskSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+
+    // ============================
+    // Shared Task Information
+    // ============================
+
+    sharedWith: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    sharedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    shareReason: {
+      type: String,
+      default: "",
+    },
+
+    sharedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

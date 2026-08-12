@@ -52,42 +52,63 @@ function EmployeeTaskCard({
 
   return (
 
-    <tr className="border-b hover:bg-slate-50 transition">
+    <tr className="border-b border-slate-200 hover:bg-slate-50 transition">
 
       {/* Task */}
 
-      <td className="px-6 py-5">
+      <td className="w-[20%] px-2 sm:px-4 py-5 align-middle">
 
-        <h3 className="font-semibold text-slate-800">
+        <h3 className="font-semibold text-slate-800 text-xs sm:text-sm break-words">
           {task.title}
         </h3>
 
-        <p className="text-sm text-slate-500">
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
           {task.project?.name}
         </p>
 
       </td>
 
-      {/* Assigned By */}
 
-      <td className="px-6 py-5">
+      {/* Project */}
 
-        <div className="flex items-center gap-2">
+      <td className="w-[14%] px-2 sm:px-4 py-5 align-middle">
 
-          <FaUserTie className="text-blue-500" />
+        <div className="flex items-center gap-1 sm:gap-2">
 
-          {task.createdBy?.fullName}
+          <FaFolderOpen className="text-teal-500 shrink-0 text-xs sm:text-sm" />
+
+          <span className="text-xs sm:text-sm text-slate-700 break-words">
+            {task.project?.name || "—"}
+          </span>
 
         </div>
 
       </td>
 
+
+      {/* Assigned By */}
+
+      <td className="w-[20%] px-2 sm:px-4 py-5 align-middle">
+
+        <div className="flex items-center gap-1 sm:gap-2">
+
+          <FaUserTie className="text-blue-500 shrink-0 text-xs sm:text-sm" />
+
+          <span className="text-xs sm:text-sm text-slate-700 break-words">
+            {task.createdBy?.fullName || "Unknown"}
+          </span>
+
+        </div>
+
+      </td>
+
+
       {/* Priority */}
 
-      <td className="px-6 py-5">
+      <td className="w-[11%] px-2 sm:px-4 py-5 align-middle">
 
         <span
-          className={`px-3 py-1 rounded-full text-sm ${priorityColor(
+          className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm whitespace-nowrap ${priorityColor(
             task.priority
           )}`}
         >
@@ -96,26 +117,30 @@ function EmployeeTaskCard({
 
       </td>
 
+
       {/* Due Date */}
 
-      <td className="px-6 py-5">
+      <td className="w-[14%] px-2 sm:px-4 py-5 align-middle">
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
 
-          <FaCalendarAlt className="text-red-500" />
+          <FaCalendarAlt className="text-red-500 shrink-0 text-xs sm:text-sm" />
 
-          {new Date(task.deadline).toLocaleDateString()}
+          <span className="text-xs sm:text-sm text-slate-700 whitespace-nowrap">
+            {new Date(task.deadline).toLocaleDateString()}
+          </span>
 
         </div>
 
       </td>
 
+
       {/* Status */}
 
-      <td className="px-6 py-5">
+      <td className="w-[9%] px-2 sm:px-4 py-5 align-middle">
 
         <span
-          className={`px-3 py-1 rounded-full text-sm ${statusColor(
+          className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm whitespace-nowrap ${statusColor(
             task.status
           )}`}
         >
@@ -124,16 +149,17 @@ function EmployeeTaskCard({
 
       </td>
 
+
       {/* Action */}
 
-      <td className="px-6 py-5">
+      <td className="w-[12%] px-2 sm:px-4 py-5 align-middle text-center">
 
         <select
           value={task.status}
           onChange={(e) =>
             updateStatus(e.target.value)
           }
-          className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500"
+          className="w-full max-w-[120px] border border-slate-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-teal-500 outline-none"
         >
 
           <option value="Todo">
@@ -153,7 +179,6 @@ function EmployeeTaskCard({
       </td>
 
     </tr>
-
   );
 }
 
