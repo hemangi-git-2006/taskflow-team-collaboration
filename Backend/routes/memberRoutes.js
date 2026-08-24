@@ -8,23 +8,68 @@ import {
   deleteMember,
   updateMember,
   getMyTeamMembers,
+  getMemberById,
 } from "../controllers/memberController.js";
+
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", addMember);
+// ========================================
+// Admin Routes
+// ========================================
 
-router.get("/", getAllMembers);
+router.post(
+  "/",
+  authMiddleware,
+  addMember
+);
 
-router.get("/next-id", getNextEmployeeId);
+router.get(
+  "/",
+  authMiddleware,
+  getAllMembers
+);
 
-// ⭐ ADD THIS
-router.get("/user/:userId", getMyTeamMembers);
+router.get(
+  "/next-id",
+  authMiddleware,
+  getNextEmployeeId
+);
 
-router.get("/:projectId", getProjectMembers);
+router.get(
+  "/:projectId",
+  authMiddleware,
+  getProjectMembers
+);
 
-router.put("/:id", updateMember);
+router.put(
+  "/:id",
+  authMiddleware,
+  updateMember
+);
 
-router.delete("/:id", deleteMember);
+router.delete(
+  "/:id",
+  authMiddleware,
+  deleteMember
+);
+
+router.get(
+  "/:id",
+  authMiddleware,
+  getMemberById
+);
+
+
+// ========================================
+// Employee Route
+// ========================================
+
+router.get(
+  "/user/:userId",
+  authMiddleware,
+  getMyTeamMembers
+);
 
 export default router;
