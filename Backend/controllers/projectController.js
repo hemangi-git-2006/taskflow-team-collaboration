@@ -9,8 +9,11 @@ export const createProject = async (req, res) => {
       name,
       description,
       deadline,
-      createdBy,
     } = req.body;
+
+    // Use the logged-in user's ID
+    // instead of trusting createdBy from frontend
+    const createdBy = req.user._id;
 
     const project = await Project.create({
       name,
@@ -33,13 +36,16 @@ export const createProject = async (req, res) => {
   }
 };
 
+
 // ============================
-// Get All Projects
+// Get Projects Created By Logged-in User
 // ============================
 export const getProjects = async (req, res) => {
   try {
 
-    const projects = await Project.find()
+    const projects = await Project.find({
+      createdBy: req.user._id,
+    })
       .populate("createdBy", "fullName email");
 
     res.json(projects);
@@ -54,10 +60,11 @@ export const getProjects = async (req, res) => {
 
   }
 };
+
+
 // ==============================
 // Get Single Project
 // ==============================
-
 export const getProjectById = async (req, res) => {
   try {
 
@@ -83,10 +90,11 @@ export const getProjectById = async (req, res) => {
 
   }
 };
+
+
 // ==============================
 // Get Projects of Logged-in Member
 // ==============================
-
 export const getMemberProjects = async (req, res) => {
   try {
 
