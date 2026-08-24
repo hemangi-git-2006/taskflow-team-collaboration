@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
-import EmployeeSidebar from "../components/employee/EmployeeSidebar";
+
 
 function Comment() {
     const [conversations, setConversations] = useState([]);
@@ -82,17 +82,13 @@ function Comment() {
     return (
         <div className="min-h-screen bg-slate-100">
 
-            {/* ========================= */}
-            {/* SIDEBAR */}
-            {/* ========================= */}
-
-            <EmployeeSidebar />
-
+      
+    
             {/* ========================= */}
             {/* MAIN CONTENT */}
             {/* ========================= */}
 
-            <main className="lg:ml-64 min-h-screen p-6">
+          <main className="min-h-screen p-6">
 
                 {/* Header */}
 
