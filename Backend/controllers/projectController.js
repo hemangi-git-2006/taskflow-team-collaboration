@@ -11,8 +11,7 @@ export const createProject = async (req, res) => {
       deadline,
     } = req.body;
 
-    // Use the logged-in user's ID
-    // instead of trusting createdBy from frontend
+    // Logged-in user becomes project owner
     const createdBy = req.user._id;
 
     const project = await Project.create({
@@ -36,9 +35,8 @@ export const createProject = async (req, res) => {
   }
 };
 
-
 // ============================
-// Get Projects Created By Logged-in User
+// Get Projects of Logged-in User
 // ============================
 export const getProjects = async (req, res) => {
   try {
@@ -60,7 +58,6 @@ export const getProjects = async (req, res) => {
 
   }
 };
-
 
 // ==============================
 // Get Single Project
@@ -90,7 +87,6 @@ export const getProjectById = async (req, res) => {
 
   }
 };
-
 
 // ==============================
 // Get Projects of Logged-in Member

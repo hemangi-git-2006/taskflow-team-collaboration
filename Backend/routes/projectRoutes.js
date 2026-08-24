@@ -7,18 +7,20 @@ import {
   getMemberProjects,
 } from "../controllers/projectController.js";
 
+import authMiddleware from "../middleware/authMiddleware.js";
+
 const router = express.Router();
 
 // Create Project
-router.post("/", createProject);
+router.post("/", authMiddleware, createProject);
 
-// Get All Projects
-router.get("/", getProjects);
+// Get Projects of Logged-in User
+router.get("/", authMiddleware, getProjects);
 
 // Get Projects of Logged-in Member
-router.get("/member/:userId", getMemberProjects);
+router.get("/member/:userId", authMiddleware, getMemberProjects);
 
 // Get Single Project
-router.get("/:id", getProjectById);
+router.get("/:id", authMiddleware, getProjectById);
 
 export default router;
