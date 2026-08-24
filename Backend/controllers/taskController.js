@@ -432,6 +432,25 @@ export const getTaskAttachment = async (req, res) => {
       });
     }
 
+    // ========================================
+// Check if logged-in user can share task
+// ========================================
+const canShareTask =
+  task.assignedTo?.toString() ===
+    fromMember.toString() ||
+  task.sharedWith?.some(
+    (memberId) =>
+      memberId.toString() ===
+      fromMember.toString()
+  );
+
+if (!canShareTask) {
+  return res.status(403).json({
+    message:
+      "You are not allowed to share this task",
+  });
+}
+
     // Find project
     const project = await Project.findById(task.project);
 
