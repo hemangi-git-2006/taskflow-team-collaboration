@@ -1,6 +1,68 @@
 import User from "../models/User.js";
 import Project from "../models/Project.js";
 
+
+// ========================================
+// Create Member
+// ========================================
+export const createMember = async (req, res) => {
+  try {
+    const {
+      employeeId,
+      fullName,
+      email,
+    } = req.body;
+
+    if (
+      !employeeId ||
+      !fullName ||
+      !email
+    ) {
+      return res.status(400).json({
+        message:
+          "Employee ID, Full Name and Email are required",
+      });
+    }
+
+    const existingMember =
+      await User.findOne({
+        employeeId,
+        createdBy: req.user._id,
+      });
+
+    if (existingMember) {
+      return res.status(400).json({
+        message:
+          "Employee ID already exists",
+      });
+    }
+
+    const member = await User.create({
+      employeeId,
+      fullName,
+      email,
+      role: "Member",
+      createdBy: req.user._id,
+    });
+
+    res.status(201).json({
+      message:
+        "Member Created Successfully",
+      member,
+    });
+
+  } catch (error) {
+    console.log(
+      "CREATE MEMBER ERROR:",
+      error
+    );
+
+    res.status(500).json({
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
 // ========================================
 // Add Member To Project
 // ========================================
@@ -27,21 +89,24 @@ export const addMember = async (req, res) => {
       req.user._id.toString()
     ) {
       return res.status(403).json({
-        message: "You are not allowed to modify this project",
+        message:
+          "You are not allowed to modify this project",
       });
     }
 
     // ------------------------------------
-    // Find employee
+    // Find member belonging to this admin
     // ------------------------------------
     const employee = await User.findOne({
       employeeId,
       role: "Member",
+      createdBy: req.user._id,
     });
 
     if (!employee) {
       return res.status(404).json({
-        message: "Employee not found",
+        message:
+          "Employee not found in your members",
       });
     }
 
@@ -62,25 +127,7 @@ export const addMember = async (req, res) => {
     }
 
     // ------------------------------------
-    // Check if employee belongs to another
-    // admin's project
-    // ------------------------------------
-    const otherAdminProject = await Project.findOne({
-      members: employee._id,
-      createdBy: {
-        $ne: req.user._id,
-      },
-    });
-
-    if (otherAdminProject) {
-      return res.status(403).json({
-        message:
-          "This employee belongs to another admin",
-      });
-    }
-
-    // ------------------------------------
-    // Add employee to project
+    // Add existing member to project
     // ------------------------------------
     await Project.updateOne(
       { _id: projectId },
@@ -98,7 +145,10 @@ export const addMember = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("ADD MEMBER ERROR:", error);
+    console.log(
+      "ADD MEMBER ERROR:",
+      error
+    );
 
     res.status(500).json({
       message: error.message,
@@ -125,7 +175,7 @@ export const getProjectMembers = async (req, res) => {
       });
     }
 
-    // Only project owner can access admin member list
+    // Only project owner can access these members
     if (
       project.createdBy.toString() !==
       req.user._id.toString()
@@ -153,87 +203,24 @@ export const getProjectMembers = async (req, res) => {
 
 
 // ========================================
-// Get Members Belonging To Logged-in Admin's
-// Projects
+// Get All Members Created By Logged-in Admin
 // ========================================
 export const getAllMembers = async (req, res) => {
   try {
 
-    // ------------------------------------
-    // Only projects created by this admin
-    // ------------------------------------
-    const projects = await Project.find({
+    const members = await User.find({
+      role: "Member",
       createdBy: req.user._id,
-      isArchived: false,
-    }).populate(
-      "members",
+    }).select(
       "fullName email employeeId role profileImage"
     );
 
-    // ------------------------------------
-    // Remove duplicate members
-    // ------------------------------------
-    const membersMap = new Map();
-
-    projects.forEach((project) => {
-
-      project.members.forEach((member) => {
-
-        if (member.role === "Member") {
-          membersMap.set(
-            member._id.toString(),
-            member
-          );
-        }
-
-      });
-
-    });
-
-    const members = Array.from(
-      membersMap.values()
-    );
-
-    // ------------------------------------
-    // Add project information
-    // ------------------------------------
-    const membersWithProjects = members.map(
-      (member) => {
-
-        const memberProjects = projects.filter(
-          (project) =>
-            project.members.some(
-              (memberId) =>
-                memberId._id.toString() ===
-                member._id.toString()
-            )
-        );
-
-        return {
-          _id: member._id,
-          fullName: member.fullName,
-          email: member.email,
-          employeeId: member.employeeId,
-          role: member.role,
-          profileImage: member.profileImage,
-
-          projects: memberProjects.map(
-            (project) => ({
-              _id: project._id,
-              name: project.name,
-            })
-          ),
-        };
-
-      }
-    );
-
-    res.json(membersWithProjects);
+    res.json(members);
 
   } catch (error) {
 
     console.log(
-      "GET ALL MEMBERS WITH PROJECTS ERROR:",
+      "GET ALL MEMBERS ERROR:",
       error
     );
 
@@ -250,8 +237,10 @@ export const getAllMembers = async (req, res) => {
 export const getNextEmployeeId = async (req, res) => {
   try {
 
+    // Count only members created by this admin
     const count = await User.countDocuments({
       role: "Member",
+      createdBy: req.user._id,
     });
 
     const employeeId = `EMP${String(
@@ -263,7 +252,11 @@ export const getNextEmployeeId = async (req, res) => {
     });
 
   } catch (error) {
-    console.log(error);
+
+    console.log(
+      "GET NEXT EMPLOYEE ID ERROR:",
+      error
+    );
 
     res.status(500).json({
       message: "Server Error",
@@ -278,23 +271,12 @@ export const getNextEmployeeId = async (req, res) => {
 export const updateMember = async (req, res) => {
   try {
 
-    // Find projects owned by this admin
-    const ownedProjects = await Project.find({
-      createdBy: req.user._id,
-      members: req.params.id,
-    });
-
-    if (ownedProjects.length === 0) {
-      return res.status(403).json({
-        message:
-          "You are not allowed to update this member",
-      });
-    }
-
+    // Member must belong to logged-in admin
     const member = await User.findOneAndUpdate(
       {
         _id: req.params.id,
         role: "Member",
+        createdBy: req.user._id,
       },
       req.body,
       {
@@ -304,17 +286,23 @@ export const updateMember = async (req, res) => {
 
     if (!member) {
       return res.status(404).json({
-        message: "Member not found",
+        message:
+          "Member not found or does not belong to you",
       });
     }
 
     res.json({
-      message: "Member Updated Successfully",
+      message:
+        "Member Updated Successfully",
       member,
     });
 
   } catch (error) {
-    console.log(error);
+
+    console.log(
+      "UPDATE MEMBER ERROR:",
+      error
+    );
 
     res.status(500).json({
       message: "Server Error",
@@ -329,31 +317,50 @@ export const updateMember = async (req, res) => {
 export const deleteMember = async (req, res) => {
   try {
 
-    // Check whether this member belongs to one
-    // of the logged-in admin's projects
-    const ownedProject = await Project.findOne({
+    // Member must belong to logged-in admin
+    const member = await User.findOne({
+      _id: req.params.id,
+      role: "Member",
       createdBy: req.user._id,
-      members: req.params.id,
     });
 
-    if (!ownedProject) {
-      return res.status(403).json({
+    if (!member) {
+      return res.status(404).json({
         message:
-          "You are not allowed to delete this member",
+          "Member not found or does not belong to you",
       });
     }
 
-    await User.findOneAndDelete({
-      _id: req.params.id,
-      role: "Member",
-    });
+    // Remove member from all projects
+    // owned by this admin
+    await Project.updateMany(
+      {
+        createdBy: req.user._id,
+        members: member._id,
+      },
+      {
+        $pull: {
+          members: member._id,
+        },
+      }
+    );
+
+    // Delete member
+    await User.findByIdAndDelete(
+      member._id
+    );
 
     res.json({
-      message: "Member Deleted Successfully",
+      message:
+        "Member Deleted Successfully",
     });
 
   } catch (error) {
-    console.log(error);
+
+    console.log(
+      "DELETE MEMBER ERROR:",
+      error
+    );
 
     res.status(500).json({
       message: "Server Error",
@@ -368,9 +375,11 @@ export const deleteMember = async (req, res) => {
 export const getMyTeamMembers = async (req, res) => {
   try {
 
-    const userId = req.params.userId;
+    // Use authenticated user instead of URL userId
+    const userId = req.user._id;
 
-    // Find all projects where current user is a member
+    // Find all projects where current user
+    // is a member
     const projects = await Project.find({
       members: userId,
     }).populate(
@@ -426,29 +435,19 @@ export const getMyTeamMembers = async (req, res) => {
 export const getMemberById = async (req, res) => {
   try {
 
-    // Check whether member belongs to this admin's project
-    const ownedProject = await Project.findOne({
-      createdBy: req.user._id,
-      members: req.params.id,
-    });
-
-    if (!ownedProject) {
-      return res.status(403).json({
-        message:
-          "You are not allowed to view this member",
-      });
-    }
-
+    // Member must belong to logged-in admin
     const member = await User.findOne({
       _id: req.params.id,
       role: "Member",
+      createdBy: req.user._id,
     }).select(
       "fullName email employeeId role profileImage"
     );
 
     if (!member) {
       return res.status(404).json({
-        message: "Member not found",
+        message:
+          "Member not found or does not belong to you",
       });
     }
 

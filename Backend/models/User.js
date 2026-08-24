@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
     employeeId: {
       type: String,
       unique: true,
-      sparse: true, // Admin doesn't need an employeeId
+      sparse: true,
       trim: true,
     },
 
@@ -38,6 +38,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["Admin", "Member"],
       default: "Member",
+    },
+
+    // ========================================
+    // Member belongs to which Admin
+    // ========================================
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
 
     profileImage: {
