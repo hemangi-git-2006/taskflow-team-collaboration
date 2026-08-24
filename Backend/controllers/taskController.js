@@ -6,27 +6,28 @@ import cloudinary from "../config/cloudinary.js";
 // Create Task
 // ==========================================
 
+// ==========================================
+// Create Task
+// ==========================================
+
 export const createTask = async (req, res) => {
   try {
-     console.log("========== CREATE TASK ==========");
+    console.log("========== CREATE TASK ==========");
     console.log("BODY:", req.body);
     console.log("FILES:", req.files);
-
-    console.log("Cloudinary config:");
-    console.log("Cloud name:", process.env.CLOUDINARY_CLOUD_NAME);
-    console.log("API key exists:", !!process.env.CLOUDINARY_API_KEY);
-    console.log("API secret exists:", !!process.env.CLOUDINARY_API_SECRET);
 
     const {
       title,
       description,
       project,
       assignedTo,
-      createdBy,
       priority,
       status,
       deadline,
     } = req.body;
+
+    // Logged-in user
+    const createdBy = req.user._id;
 
     // ==========================================
     // Validate required fields
@@ -37,7 +38,6 @@ export const createTask = async (req, res) => {
       !description ||
       !project ||
       !assignedTo ||
-      !createdBy ||
       !deadline
     ) {
       return res.status(400).json({
@@ -46,31 +46,74 @@ export const createTask = async (req, res) => {
     }
 
     // ==========================================
-    // Upload images to Cloudinary
+    // Verify project
+    // ==========================================
+
+    const projectData = await Project.findById(project);
+
+    if (!projectData) {
+      return res.status(404).json({
+        message: "Project not found",
+      });
+    }
+
+    // Only project owner can create tasks
+    if (
+      projectData.createdBy.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message:
+          "You are not allowed to create tasks in this project",
+      });
+    }
+
+    // ==========================================
+    // Verify assigned member belongs to project
+    // ==========================================
+
+    const assignedMemberExists =
+      projectData.members.some(
+        (memberId) =>
+          memberId.toString() ===
+          assignedTo.toString()
+      );
+
+    if (!assignedMemberExists) {
+      return res.status(400).json({
+        message:
+          "Selected employee is not a member of this project",
+      });
+    }
+
+    // ==========================================
+    // Upload images
     // ==========================================
 
     const attachments = [];
 
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
-        const result = await new Promise((resolve, reject) => {
-          const uploadStream =
-            cloudinary.uploader.upload_stream(
-              {
-                folder: "taskflow/tasks",
-                resource_type: "image",
-              },
-              (error, result) => {
-                if (error) {
-                  reject(error);
-                } else {
-                  resolve(result);
+        const result = await new Promise(
+          (resolve, reject) => {
+            const uploadStream =
+              cloudinary.uploader.upload_stream(
+                {
+                  folder: "taskflow/tasks",
+                  resource_type: "image",
+                },
+                (error, result) => {
+                  if (error) {
+                    reject(error);
+                  } else {
+                    resolve(result);
+                  }
                 }
-              }
-            );
+              );
 
-          uploadStream.end(file.buffer);
-        });
+            uploadStream.end(file.buffer);
+          }
+        );
 
         attachments.push({
           url: result.secure_url,
@@ -99,12 +142,20 @@ export const createTask = async (req, res) => {
     // Return created task
     // ==========================================
 
-    const populatedTask = await Task.findById(
-      newTask._id
-    )
-      .populate("assignedTo", "fullName employeeId")
-      .populate("createdBy", "fullName employeeId")
-      .populate("project", "name");
+    const populatedTask =
+      await Task.findById(newTask._id)
+        .populate(
+          "assignedTo",
+          "fullName employeeId"
+        )
+        .populate(
+          "createdBy",
+          "fullName employeeId"
+        )
+        .populate(
+          "project",
+          "name"
+        );
 
     res.status(201).json({
       message: "Task Created Successfully",
@@ -128,18 +179,46 @@ export const createTask = async (req, res) => {
 // Get All Tasks
 // ==================================================
 
+// ==================================================
+// Get Tasks Of Logged-in Admin
+// ==================================================
+
 export const getTasks = async (req, res) => {
   try {
-    const tasks = await Task.find()
-      .populate("assignedTo", "fullName employeeId")
-      .populate("createdBy", "fullName")
-      .populate("project", "name");
+
+    // Get projects owned by logged-in admin
+    const projects = await Project.find({
+      createdBy: req.user._id,
+    }).select("_id");
+
+    const projectIds = projects.map(
+      (project) => project._id
+    );
+
+    const tasks = await Task.find({
+      project: { $in: projectIds },
+    })
+      .populate(
+        "assignedTo",
+        "fullName employeeId"
+      )
+      .populate(
+        "createdBy",
+        "fullName"
+      )
+      .populate(
+        "project",
+        "name"
+      );
 
     res.json(tasks);
 
   } catch (error) {
 
-    console.log(error);
+    console.log(
+      "GET TASKS ERROR:",
+      error
+    );
 
     res.status(500).json({
       message: "Server Error",
@@ -152,8 +231,34 @@ export const getTasks = async (req, res) => {
 // Get Tasks By Project
 // ==================================================
 
+// ==================================================
+// Get Tasks By Project
+// ==================================================
+
 export const getProjectTasks = async (req, res) => {
   try {
+
+    const project =
+      await Project.findById(
+        req.params.projectId
+      );
+
+    if (!project) {
+      return res.status(404).json({
+        message: "Project not found",
+      });
+    }
+
+    // Only project owner can access admin task list
+    if (
+      project.createdBy.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message:
+          "You are not allowed to view these tasks",
+      });
+    }
 
     const tasks = await Task.find({
       project: req.params.projectId,
@@ -179,7 +284,10 @@ export const getProjectTasks = async (req, res) => {
 
   } catch (error) {
 
-    console.log(error);
+    console.log(
+      "GET PROJECT TASKS ERROR:",
+      error
+    );
 
     res.status(500).json({
       message: "Server Error",
@@ -192,10 +300,14 @@ export const getProjectTasks = async (req, res) => {
 // Get Tasks of Logged-in Member
 // ==================================================
 
+// ==================================================
+// Get Tasks Of Logged-in Member
+// ==================================================
+
 export const getMemberTasks = async (req, res) => {
   try {
 
-    const userId = req.params.userId;
+    const userId = req.user._id;
 
     const tasks = await Task.find({
       $or: [
@@ -228,7 +340,10 @@ export const getMemberTasks = async (req, res) => {
 
   } catch (error) {
 
-    console.log(error);
+    console.log(
+      "GET MEMBER TASKS ERROR:",
+      error
+    );
 
     res.status(500).json({
       message: "Server Error",
@@ -244,7 +359,9 @@ export const getMemberTasks = async (req, res) => {
 export const getTaskById = async (req, res) => {
   try {
 
-    const task = await Task.findById(req.params.id)
+    const task = await Task.findById(
+      req.params.id
+    )
       .populate("assignedTo")
       .populate("createdBy")
       .populate("project")
@@ -256,11 +373,41 @@ export const getTaskById = async (req, res) => {
       });
     }
 
+    const project = await Project.findById(
+      task.project._id || task.project
+    );
+
+    const isOwner =
+      project &&
+      project.createdBy.toString() ===
+        req.user._id.toString();
+
+    const isAssigned =
+      task.assignedTo?._id?.toString() ===
+      req.user._id.toString();
+
+    const isShared =
+      task.sharedWith?.some(
+        (member) =>
+          member._id.toString() ===
+          req.user._id.toString()
+      );
+
+    if (!isOwner && !isAssigned && !isShared) {
+      return res.status(403).json({
+        message:
+          "You are not allowed to view this task",
+      });
+    }
+
     res.json(task);
 
   } catch (error) {
 
-    console.log(error);
+    console.log(
+      "GET TASK BY ID ERROR:",
+      error
+    );
 
     res.status(500).json({
       message: "Server Error",
@@ -282,6 +429,39 @@ export const getTaskAttachment = async (req, res) => {
     if (!task) {
       return res.status(404).json({
         message: "Task not found",
+      });
+    }
+
+    // Find project
+    const project = await Project.findById(task.project);
+
+    if (!project) {
+      return res.status(404).json({
+        message: "Project not found",
+      });
+    }
+
+    // Check access
+    const isOwner =
+      project.createdBy.toString() ===
+      req.user._id.toString();
+
+    const isAssigned =
+      task.assignedTo &&
+      task.assignedTo.toString() ===
+        req.user._id.toString();
+
+    const isShared =
+      task.sharedWith?.some(
+        (memberId) =>
+          memberId.toString() ===
+          req.user._id.toString()
+      );
+
+    if (!isOwner && !isAssigned && !isShared) {
+      return res.status(403).json({
+        message:
+          "You are not allowed to view this attachment",
       });
     }
 
@@ -321,17 +501,15 @@ export const getTaskAttachment = async (req, res) => {
       });
     }
 
-    // Get content type
     const contentType =
       imageResponse.headers.get("content-type") ||
       "image/jpeg";
 
-    // Convert response to buffer
     const imageBuffer = Buffer.from(
       await imageResponse.arrayBuffer()
     );
 
-    // Send image through your backend
+    // Send image through backend
     res.setHeader(
       "Content-Type",
       contentType
@@ -364,13 +542,34 @@ export const getTaskAttachment = async (req, res) => {
 export const updateTask = async (req, res) => {
   try {
 
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-      }
+    const task = await Task.findById(
+      req.params.id
     );
+
+    if (!task) {
+      return res.status(404).json({
+        message: "Task not found",
+      });
+    }
+
+    const project = await Project.findById(
+      task.project
+    );
+
+    if (
+      !project ||
+      project.createdBy.toString() !==
+        req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message:
+          "You are not allowed to update this task",
+      });
+    }
+
+    Object.assign(task, req.body);
+
+    await task.save();
 
     res.json({
       message: "Task Updated Successfully",
@@ -394,6 +593,31 @@ export const updateTask = async (req, res) => {
 
 export const deleteTask = async (req, res) => {
   try {
+
+    const task = await Task.findById(
+      req.params.id
+    );
+
+    if (!task) {
+      return res.status(404).json({
+        message: "Task not found",
+      });
+    }
+
+    const project = await Project.findById(
+      task.project
+    );
+
+    if (
+      !project ||
+      project.createdBy.toString() !==
+        req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message:
+          "You are not allowed to delete this task",
+      });
+    }
 
     await Task.findByIdAndDelete(
       req.params.id
@@ -423,12 +647,46 @@ export const updateTaskStatus = async (req, res) => {
 
     const { status } = req.body;
 
-    const task =
-      await Task.findByIdAndUpdate(
-        req.params.id,
-        { status },
-        { new: true }
+    const task = await Task.findById(
+      req.params.id
+    );
+
+    if (!task) {
+      return res.status(404).json({
+        message: "Task not found",
+      });
+    }
+
+    const project = await Project.findById(
+      task.project
+    );
+
+    const isOwner =
+      project &&
+      project.createdBy.toString() ===
+        req.user._id.toString();
+
+    const isAssigned =
+      task.assignedTo.toString() ===
+        req.user._id.toString();
+
+    const isShared =
+      task.sharedWith?.some(
+        (memberId) =>
+          memberId.toString() ===
+          req.user._id.toString()
       );
+
+    if (!isOwner && !isAssigned && !isShared) {
+      return res.status(403).json({
+        message:
+          "You are not allowed to update this task",
+      });
+    }
+
+    task.status = status;
+
+    await task.save();
 
     res.json({
       message: "Task Status Updated",
@@ -458,13 +716,14 @@ export const shareTask = async (req, res) => {
     console.log("BODY:", req.body);
     console.log("FILES:", req.files);
 
- const {
+const {
   taskId,
-  fromMember,
   toMember,
   reason,
   projectId,
 } = req.body || {};
+
+const fromMember = req.user._id;
 
     // --------------------------------------------
     // Validate required fields
