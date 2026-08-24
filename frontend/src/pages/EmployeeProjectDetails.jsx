@@ -11,7 +11,8 @@ import {
   FaTasks,
   FaUsers,
   FaUser,
-  
+  FaImage,
+  FaTimes,
 } from "react-icons/fa";
 
 import API from "../services/api";
@@ -29,6 +30,9 @@ function EmployeeProjectDetails() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [taskDateFilter, setTaskDateFilter] = useState("All");
+
+  // Image popup
+  const [selectedImage, setSelectedImage] = useState(null);
 
   // ============================
   // Fetch Project + Tasks
@@ -49,13 +53,12 @@ function EmployeeProjectDetails() {
 
       setProject(projectRes.data);
 
-
       // Get ALL tasks of this project
-const taskRes = await API.get(
-  `/tasks/project/${id}`
-);
+      const taskRes = await API.get(
+        `/tasks/project/${id}`
+      );
 
-setTasks(taskRes.data);
+      setTasks(taskRes.data);
 
     } catch (error) {
       console.log(
@@ -108,55 +111,64 @@ setTasks(taskRes.data);
         return "bg-green-100 text-green-700";
     }
   };
+
   const filteredProjectTasks = tasks.filter((task) => {
-  if (taskDateFilter === "All") {
-    return true;
-  }
-
-  if (!task.deadline) {
-    return false;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const taskDate = new Date(task.deadline);
-  taskDate.setHours(0, 0, 0, 0);
-
-  switch (taskDateFilter) {
-    case "Today":
-      return taskDate.getTime() === today.getTime();
-
-    case "Yesterday": {
-      const yesterday = new Date(today);
-      yesterday.setDate(today.getDate() - 1);
-
-      return (
-        taskDate.getTime() ===
-        yesterday.getTime()
-      );
-    }
-
-    case "Last 7 Days": {
-      const last7Days = new Date(today);
-      last7Days.setDate(today.getDate() - 6);
-
-      return (
-        taskDate >= last7Days &&
-        taskDate <= today
-      );
-    }
-
-    case "This Month":
-      return (
-        taskDate.getMonth() === today.getMonth() &&
-        taskDate.getFullYear() === today.getFullYear()
-      );
-
-    default:
+    if (taskDateFilter === "All") {
       return true;
-  }
-});
+    }
+
+    if (!task.deadline) {
+      return false;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const taskDate = new Date(task.deadline);
+    taskDate.setHours(0, 0, 0, 0);
+
+    switch (taskDateFilter) {
+      case "Today":
+        return taskDate.getTime() === today.getTime();
+
+      case "Yesterday": {
+        const yesterday = new Date(today);
+
+        yesterday.setDate(
+          today.getDate() - 1
+        );
+
+        return (
+          taskDate.getTime() ===
+          yesterday.getTime()
+        );
+      }
+
+      case "Last 7 Days": {
+        const last7Days = new Date(today);
+
+        last7Days.setDate(
+          today.getDate() - 6
+        );
+
+        return (
+          taskDate >= last7Days &&
+          taskDate <= today
+        );
+      }
+
+      case "This Month":
+        return (
+          taskDate.getMonth() ===
+            today.getMonth() &&
+          taskDate.getFullYear() ===
+            today.getFullYear()
+        );
+
+      default:
+        return true;
+    }
+  });
 
   // ============================
   // Loading
@@ -297,11 +309,9 @@ setTasks(taskRes.data);
               mb-6
             "
           >
-
             <FaArrowLeft />
 
             Back to Projects
-
           </button>
 
           {/* ============================
@@ -635,58 +645,63 @@ setTasks(taskRes.data);
               sm:p-8
             "
           >
-<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-  
-  <div>
-    <h2 className="text-2xl font-bold text-slate-800">
-      Project Tasks
-    </h2>
 
-    <p className="text-slate-500 mt-1">
-      Tasks assigned in this project
-    </p>
-  </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
 
-  <select
-    value={taskDateFilter}
-    onChange={(e) =>
-      setTaskDateFilter(e.target.value)
-    }
-    className="
-      border
-      border-slate-300
-      rounded-xl
-      px-4
-      py-3
-      outline-none
-      focus:ring-2
-      focus:ring-teal-500
-      w-full
-      sm:w-52
-    "
-  >
-    <option value="All">
-      All Tasks
-    </option>
+              <div>
 
-    <option value="Today">
-      Today
-    </option>
+                <h2 className="text-2xl font-bold text-slate-800">
+                  Project Tasks
+                </h2>
 
-    <option value="Yesterday">
-      Yesterday
-    </option>
+                <p className="text-slate-500 mt-1">
+                  Tasks assigned in this project
+                </p>
 
-    <option value="Last 7 Days">
-      Last 7 Days
-    </option>
+              </div>
 
-    <option value="This Month">
-      This Month
-    </option>
-  </select>
+              <select
+                value={taskDateFilter}
+                onChange={(e) =>
+                  setTaskDateFilter(e.target.value)
+                }
+                className="
+                  border
+                  border-slate-300
+                  rounded-xl
+                  px-4
+                  py-3
+                  outline-none
+                  focus:ring-2
+                  focus:ring-teal-500
+                  w-full
+                  sm:w-52
+                "
+              >
 
-</div>
+                <option value="All">
+                  All Tasks
+                </option>
+
+                <option value="Today">
+                  Today
+                </option>
+
+                <option value="Yesterday">
+                  Yesterday
+                </option>
+
+                <option value="Last 7 Days">
+                  Last 7 Days
+                </option>
+
+                <option value="This Month">
+                  This Month
+                </option>
+
+              </select>
+
+            </div>
 
             {/* No Tasks */}
 
@@ -728,6 +743,10 @@ setTasks(taskRes.data);
                       </th>
 
                       <th className="text-left px-5 py-4">
+                        Attachments
+                      </th>
+
+                      <th className="text-left px-5 py-4">
                         Assigned By
                       </th>
 
@@ -743,15 +762,13 @@ setTasks(taskRes.data);
                         Status
                       </th>
 
-                   
-
                     </tr>
 
                   </thead>
 
                   <tbody>
 
-                   {filteredProjectTasks.map((task) => (
+                    {filteredProjectTasks.map((task) => (
 
                       <tr
                         key={task._id}
@@ -773,6 +790,75 @@ setTasks(taskRes.data);
                           <p className="text-sm text-slate-500 mt-1">
                             {task.description}
                           </p>
+
+                        </td>
+
+                        {/* Attachments */}
+
+                        <td className="px-5 py-5">
+
+                          {task.attachments &&
+                          task.attachments.length > 0 ? (
+
+                            <div className="flex flex-wrap gap-2">
+
+                              {task.attachments.map(
+                                (attachment, index) => {
+
+                                  const imageUrl =
+                                    typeof attachment === "string"
+                                      ? attachment
+                                      : attachment?.url;
+
+                                  return (
+                                    <button
+                                      key={index}
+                                      type="button"
+                                      onClick={() =>
+                                        setSelectedImage({
+                                          url: imageUrl,
+                                          name:
+                                            attachment?.filename ||
+                                            `Attachment ${index + 1}`,
+                                        })
+                                      }
+                                      className="
+                                        rounded-lg
+                                        overflow-hidden
+                                        border
+                                        border-slate-200
+                                        hover:ring-2
+                                        hover:ring-teal-500
+                                        transition
+                                        focus:outline-none
+                                      "
+                                    >
+                                      <img
+                                        src={imageUrl}
+                                        alt={`Attachment ${index + 1}`}
+                                        className="
+                                          w-16
+                                          h-16
+                                          object-cover
+                                          rounded-lg
+                                          cursor-pointer
+                                        "
+                                      />
+                                    </button>
+                                  );
+
+                                }
+                              )}
+
+                            </div>
+
+                          ) : (
+
+                            <span className="text-sm text-slate-400">
+                              No images
+                            </span>
+
+                          )}
 
                         </td>
 
@@ -847,11 +933,6 @@ setTasks(taskRes.data);
 
                         </td>
 
-                        {/* Share */}
-
-                       
-                    
-
                       </tr>
 
                     ))}
@@ -865,13 +946,114 @@ setTasks(taskRes.data);
             )}
 
           </div>
-<EmployeeShareTask
-  project={project}
-  tasks={tasks}
-/>
+
+          <EmployeeShareTask
+            project={project}
+            tasks={tasks}
+          />
+
         </div>
 
       </main>
+
+      {/* ================================= */}
+      {/* IMAGE POPUP */}
+      {/* ================================= */}
+
+      {selectedImage && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[99999]
+            bg-black/80
+            flex
+            items-center
+            justify-center
+            p-4
+          "
+          onClick={() => setSelectedImage(null)}
+        >
+
+          <div
+            className="
+              relative
+              bg-white
+              rounded-2xl
+              p-4
+              shadow-2xl
+              max-w-5xl
+              w-full
+              max-h-[90vh]
+            "
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
+
+            {/* Close button */}
+
+            <button
+              type="button"
+              onClick={() =>
+                setSelectedImage(null)
+              }
+              className="
+                absolute
+                top-3
+                right-3
+                z-20
+                w-10
+                h-10
+                rounded-full
+                bg-red-500
+                hover:bg-red-600
+                text-white
+                flex
+                items-center
+                justify-center
+              "
+              aria-label="Close image"
+            >
+              <FaTimes />
+            </button>
+
+            {/* Image */}
+
+            <div
+              className="
+                flex
+                items-center
+                justify-center
+                bg-slate-100
+                rounded-xl
+                p-4
+              "
+            >
+
+              <img
+                src={selectedImage.url}
+                alt={selectedImage.name}
+                className="
+                  max-w-full
+                  max-h-[75vh]
+                  object-contain
+                  rounded-lg
+                "
+              />
+
+            </div>
+
+            {/* Filename */}
+
+            <p className="text-center text-sm text-slate-600 mt-3">
+              {selectedImage.name}
+            </p>
+
+          </div>
+
+        </div>
+      )}
 
     </div>
   );

@@ -96,23 +96,65 @@ export const getProjectMembers = async (req, res) => {
 };
 
 
-// Get All Members
+// ========================================
+// Get All Members With Their Projects
+// ========================================
 export const getAllMembers = async (req, res) => {
   try {
+
+    // Get all members
     const members = await User.find({
       role: "Member",
     }).select(
       "fullName email employeeId role profileImage"
     );
 
-    res.json(members);
+    // Get all projects
+    const projects = await Project.find({
+      isArchived: false,
+    }).select(
+      "name members"
+    );
+
+    // Add projects to each member
+    const membersWithProjects = members.map((member) => {
+
+      const memberProjects = projects.filter((project) =>
+        project.members.some(
+          (memberId) =>
+            memberId.toString() === member._id.toString()
+        )
+      );
+
+      return {
+        _id: member._id,
+        fullName: member.fullName,
+        email: member.email,
+        employeeId: member.employeeId,
+        role: member.role,
+        profileImage: member.profileImage,
+
+        projects: memberProjects.map((project) => ({
+          _id: project._id,
+          name: project.name,
+        })),
+      };
+
+    });
+
+    res.json(membersWithProjects);
 
   } catch (error) {
-    console.log(error);
+
+    console.log(
+      "GET ALL MEMBERS WITH PROJECTS ERROR:",
+      error
+    );
 
     res.status(500).json({
       message: "Server Error",
     });
+
   }
 };
 

@@ -12,6 +12,8 @@ import RegisterForm from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import ProjectDetails from "./pages/ProjectDetails";
+import Tasks from "./pages/Tasks";
+
 
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import EmployeeTasks from "./pages/EmployeeTasks";
@@ -21,6 +23,12 @@ import EmployeeMemberProfile from "./pages/EmployeeMemberProfile";
 
 import EmployeeTeamPage from "./pages/EmployeeTeamPage";
 import EmployeeProfilePage from "./pages/EmployeeProfilePage";
+
+import Comment from "./pages/Comment.jsx";
+import AdminCommentsPage from "./pages/AdminCommentsPage";
+import AdminLayout from "./layout/AdminLayout";
+import TeamMembers from "./pages/TeamMembers";
+import Profile from "./pages/Profile";
 
 function App() {
   return (
@@ -47,21 +55,40 @@ function App() {
         />
 
         {/* Admin Routes */}
-    
-        <Route
-          path="/dashboard"
-          element={<Dashboard />}
-        />
+<Route element={<AdminLayout />}>
 
-        <Route
-          path="/projects"
-          element={<Projects />}
-        />
+  <Route
+    path="/dashboard"
+    element={<Dashboard />}
+  />
 
-        <Route
-          path="/projects/:id"
-          element={<ProjectDetails />}
-        />
+  <Route
+    path="/projects"
+    element={<Projects />}
+  />
+
+  <Route
+    path="/projects/:id"
+    element={<ProjectDetails />}
+  />
+
+  <Route
+    path="/team-members"
+    element={<TeamMembers />}
+  />
+
+<Route
+  path="/profile"
+  element={<Profile />}
+/>
+
+  <Route
+    path="/admin-comments"
+    element={<AdminCommentsPage />}
+  />
+
+</Route>
+        
 
         {/* Employee Routes */}
         <Route
@@ -100,6 +127,11 @@ function App() {
         <Route
           path="/member/:id"
           element={<EmployeeMemberProfile />}
+        />
+
+        <Route
+          path="/employee-comments"
+          element={<Comment />}
         />
 
         {/* ========================= */}

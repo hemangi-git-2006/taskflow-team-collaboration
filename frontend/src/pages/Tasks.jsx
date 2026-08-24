@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
+import CommentSection from "../components/CommentSection";
+import TaskAttachments from "../components/common/TaskAttachments";
 
 function Tasks() {
   const [tasks, setTasks] = useState([]);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   useEffect(() => {
     getTasks();
@@ -95,11 +98,8 @@ function Tasks() {
           <select className="col-span-2 border rounded-xl px-4">
 
             <option>All Status</option>
-
             <option>Todo</option>
-
             <option>In Progress</option>
-
             <option>Completed</option>
 
           </select>
@@ -107,9 +107,7 @@ function Tasks() {
           <select className="col-span-2 border rounded-xl px-4">
 
             <option>This Month</option>
-
             <option>This Week</option>
-
             <option>Today</option>
 
           </select>
@@ -128,149 +126,255 @@ function Tasks() {
 
       <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
 
-        <table className="w-full">
+        <div className="overflow-x-auto">
 
-          <thead className="bg-slate-900 text-white">
+          <table className="w-full min-w-[1100px]">
 
-            <tr>
-
-              <th className="text-left px-6 py-5">Task</th>
-
-              <th className="text-left px-6 py-5">Assigned By</th>
-
-              <th className="text-left px-6 py-5">Assigned To</th>
-
-              <th className="text-left px-6 py-5">Priority</th>
-
-              <th className="text-left px-6 py-5">Status</th>
-
-              <th className="text-left px-6 py-5">Due Date</th>
-
-              <th className="text-left px-6 py-5">Created</th>
-
-              <th className="text-center px-6 py-5">Actions</th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            {tasks.length === 0 ? (
+            <thead className="bg-slate-900 text-white">
 
               <tr>
 
-                <td
-                  colSpan="8"
-                  className="text-center py-24 text-2xl text-slate-500"
-                >
+                <th className="text-left px-6 py-5">
+                  Task
+                </th>
 
-                  📋
+                {/* NEW */}
+                <th className="text-left px-6 py-5">
+                  Attachments
+                </th>
 
-                  <p className="mt-4">
+                <th className="text-left px-6 py-5">
+                  Assigned By
+                </th>
 
-                    No Tasks Found
+                <th className="text-left px-6 py-5">
+                  Assigned To
+                </th>
 
-                  </p>
+                <th className="text-left px-6 py-5">
+                  Priority
+                </th>
 
-                </td>
+                <th className="text-left px-6 py-5">
+                  Status
+                </th>
+
+                <th className="text-left px-6 py-5">
+                  Due Date
+                </th>
+
+                <th className="text-left px-6 py-5">
+                  Created
+                </th>
+
+                <th className="text-center px-6 py-5">
+                  Actions
+                </th>
 
               </tr>
 
-            ) : (
+            </thead>
 
-              tasks.map((task) => (
+            <tbody>
 
-                <tr
-                  key={task._id}
-                  className="border-b hover:bg-slate-50"
-                >
+              {tasks.length === 0 ? (
 
-                  <td className="px-6 py-5 font-semibold">
+                <tr>
 
-                    {task.title}
+                  <td
+                    colSpan="9"
+                    className="text-center py-24 text-2xl text-slate-500"
+                  >
 
-                  </td>
+                    📋
 
-                  <td className="px-6 py-5">
-
-                    {task.createdBy?.fullName}
-
-                  </td>
-
-                  <td className="px-6 py-5">
-
-                    {task.assignedTo?.fullName}
-
-                  </td>
-
-                  <td className="px-6 py-5">
-
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm ${getPriorityColor(task.priority)}`}
-                    >
-
-                      {task.priority}
-
-                    </span>
-
-                  </td>
-
-                  <td className="px-6 py-5">
-
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm ${getStatusColor(task.status)}`}
-                    >
-
-                      {task.status}
-
-                    </span>
-
-                  </td>
-
-                  <td className="px-6 py-5">
-
-                    {new Date(task.deadline).toLocaleDateString()}
-
-                  </td>
-
-                  <td className="px-6 py-5">
-
-                    {new Date(task.createdAt).toLocaleDateString()}
-
-                  </td>
-
-                  <td className="px-6 py-5">
-
-                    <div className="flex justify-center gap-3">
-
-                      <button className="bg-yellow-500 hover:bg-yellow-600 text-white w-10 h-10 rounded-lg">
-
-                        ✏️
-
-                      </button>
-
-                      <button className="bg-red-500 hover:bg-red-600 text-white w-10 h-10 rounded-lg">
-
-                        🗑️
-
-                      </button>
-
-                    </div>
+                    <p className="mt-4">
+                      No Tasks Found
+                    </p>
 
                   </td>
 
                 </tr>
 
-              ))
+              ) : (
 
-            )}
+                tasks.map((task) => (
 
-          </tbody>
+                  <tr
+                    key={task._id}
+                    className="border-b hover:bg-slate-50"
+                  >
 
-        </table>
+                    {/* Task */}
+
+                    <td className="px-6 py-5 font-semibold">
+
+                      <div>
+
+                        <p className="font-semibold text-slate-800">
+                          {task.title}
+                        </p>
+
+                        <p className="text-sm text-slate-500 mt-1">
+                          {task.description}
+                        </p>
+
+                      </div>
+
+                    </td>
+
+
+                    {/* ============================ */}
+                    {/* Attachments / View Images */}
+                    {/* ============================ */}
+
+                    <td className="px-6 py-5">
+
+                      <TaskAttachments
+                        attachments={task.attachments}
+                      />
+
+                    </td>
+
+
+                    {/* Assigned By */}
+
+                    <td className="px-6 py-5">
+
+                      {task.createdBy?.fullName || "Unknown"}
+
+                    </td>
+
+
+                    {/* Assigned To */}
+
+                    <td className="px-6 py-5">
+
+                      {task.assignedTo?.fullName || "Unknown"}
+
+                    </td>
+
+
+                    {/* Priority */}
+
+                    <td className="px-6 py-5">
+
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm ${getPriorityColor(
+                          task.priority
+                        )}`}
+                      >
+
+                        {task.priority}
+
+                      </span>
+
+                    </td>
+
+
+                    {/* Status */}
+
+                    <td className="px-6 py-5">
+
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm ${getStatusColor(
+                          task.status
+                        )}`}
+                      >
+
+                        {task.status}
+
+                      </span>
+
+                    </td>
+
+
+                    {/* Due Date */}
+
+                    <td className="px-6 py-5">
+
+                      {task.deadline
+                        ? new Date(
+                            task.deadline
+                          ).toLocaleDateString()
+                        : "No deadline"}
+
+                    </td>
+
+
+                    {/* Created */}
+
+                    <td className="px-6 py-5">
+
+                      {task.createdAt
+                        ? new Date(
+                            task.createdAt
+                          ).toLocaleDateString()
+                        : "—"}
+
+                    </td>
+
+
+                    {/* Actions */}
+
+                    <td className="px-6 py-5">
+
+                      <div className="flex justify-center gap-3">
+
+                        <button
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white w-10 h-10 rounded-lg"
+                        >
+                          ✏️
+                        </button>
+
+                        <button
+                          className="bg-red-500 hover:bg-red-600 text-white w-10 h-10 rounded-lg"
+                        >
+                          🗑️
+                        </button>
+
+                      </div>
+
+                    </td>
+
+                  </tr>
+
+                ))
+
+              )}
+
+            </tbody>
+
+          </table>
+
+        </div>
 
       </div>
+
+      {/* Comments */}
+
+      {selectedTask && (
+        <div className="mt-8">
+
+          <div className="flex justify-between items-center mb-3">
+
+            <h2 className="text-2xl font-bold">
+              Comments for: {selectedTask.title}
+            </h2>
+
+            <button
+              onClick={() => setSelectedTask(null)}
+              className="text-red-500 font-semibold"
+            >
+              Close
+            </button>
+
+          </div>
+
+          <CommentSection taskId={selectedTask._id} />
+
+        </div>
+      )}
 
     </div>
   );

@@ -7,6 +7,7 @@ import {
   FaSignOutAlt,
   FaBars,
   FaTimes,
+  FaComments,
 } from "react-icons/fa";
 
 import { useState } from "react";
@@ -47,11 +48,19 @@ function EmployeeSidebar() {
       icon: <FaUsers />,
     },
 
+    // ✅ NEW - Comments
+     {
+  name: "Team Communication",
+  path: "/employee-comments",
+  icon: <FaComments />,
+},
+
     {
       name: "Profile",
       path: "/employee-profile",
       icon: <FaUserCircle />,
     },
+   
   ];
 
   // =========================

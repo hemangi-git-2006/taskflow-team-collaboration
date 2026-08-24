@@ -1,9 +1,11 @@
 import API from "../../services/api";
+
 import {
   FaCalendarAlt,
-  FaFolderOpen,
   FaUserTie,
 } from "react-icons/fa";
+
+import TaskAttachments from "../common/TaskAttachments";
 
 function EmployeeTaskCard({
   task,
@@ -12,7 +14,6 @@ function EmployeeTaskCard({
 
   const updateStatus = async (status) => {
     try {
-
       await API.put(`/tasks/${task._id}/status`, {
         status,
       });
@@ -51,10 +52,11 @@ function EmployeeTaskCard({
   };
 
   return (
-
     <tr className="border-b border-slate-200 hover:bg-slate-50 transition">
 
+      {/* ========================= */}
       {/* Task */}
+      {/* ========================= */}
 
       <td className="w-[20%] px-2 sm:px-4 py-5 align-middle">
 
@@ -63,30 +65,29 @@ function EmployeeTaskCard({
         </h3>
 
         <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          {task.project?.name}
+          {task.description}
         </p>
 
       </td>
 
 
-      {/* Project */}
+      {/* ========================= */}
+      {/* Attachments */}
+      {/* ========================= */}
 
       <td className="w-[14%] px-2 sm:px-4 py-5 align-middle">
 
-        <div className="flex items-center gap-1 sm:gap-2">
-
-          <FaFolderOpen className="text-teal-500 shrink-0 text-xs sm:text-sm" />
-
-          <span className="text-xs sm:text-sm text-slate-700 break-words">
-            {task.project?.name || "—"}
-          </span>
-
-        </div>
+        <TaskAttachments
+  taskId={task._id}
+  attachments={task.attachments}
+/>
 
       </td>
 
 
+      {/* ========================= */}
       {/* Assigned By */}
+      {/* ========================= */}
 
       <td className="w-[20%] px-2 sm:px-4 py-5 align-middle">
 
@@ -103,14 +104,22 @@ function EmployeeTaskCard({
       </td>
 
 
+      {/* ========================= */}
       {/* Priority */}
+      {/* ========================= */}
 
       <td className="w-[11%] px-2 sm:px-4 py-5 align-middle">
 
         <span
-          className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm whitespace-nowrap ${priorityColor(
-            task.priority
-          )}`}
+          className={`
+            inline-block
+            px-2 sm:px-3
+            py-1
+            rounded-full
+            text-xs sm:text-sm
+            whitespace-nowrap
+            ${priorityColor(task.priority)}
+          `}
         >
           {task.priority}
         </span>
@@ -118,7 +127,9 @@ function EmployeeTaskCard({
       </td>
 
 
+      {/* ========================= */}
       {/* Due Date */}
+      {/* ========================= */}
 
       <td className="w-[14%] px-2 sm:px-4 py-5 align-middle">
 
@@ -135,14 +146,22 @@ function EmployeeTaskCard({
       </td>
 
 
+      {/* ========================= */}
       {/* Status */}
+      {/* ========================= */}
 
       <td className="w-[9%] px-2 sm:px-4 py-5 align-middle">
 
         <span
-          className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm whitespace-nowrap ${statusColor(
-            task.status
-          )}`}
+          className={`
+            inline-block
+            px-2 sm:px-3
+            py-1
+            rounded-full
+            text-xs sm:text-sm
+            whitespace-nowrap
+            ${statusColor(task.status)}
+          `}
         >
           {task.status}
         </span>
@@ -150,7 +169,9 @@ function EmployeeTaskCard({
       </td>
 
 
+      {/* ========================= */}
       {/* Action */}
+      {/* ========================= */}
 
       <td className="w-[12%] px-2 sm:px-4 py-5 align-middle text-center">
 
@@ -159,7 +180,19 @@ function EmployeeTaskCard({
           onChange={(e) =>
             updateStatus(e.target.value)
           }
-          className="w-full max-w-[120px] border border-slate-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+          className="
+            w-full
+            max-w-[120px]
+            border
+            border-slate-300
+            rounded-lg
+            px-2 sm:px-3
+            py-2
+            text-xs sm:text-sm
+            focus:ring-2
+            focus:ring-teal-500
+            outline-none
+          "
         >
 
           <option value="Todo">

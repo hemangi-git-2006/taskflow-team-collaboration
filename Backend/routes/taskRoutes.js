@@ -1,4 +1,5 @@
 import express from "express";
+import upload from "../middleware/upload.js";
 
 import {
   createTask,
@@ -6,6 +7,7 @@ import {
   getProjectTasks,
   getMemberTasks,
   getTaskById,
+  getTaskAttachment,
   updateTask,
   deleteTask,
   updateTaskStatus,
@@ -18,7 +20,11 @@ const router = express.Router();
 // Create Task
 // ============================
 
-router.post("/", createTask);
+router.post(
+  "/",
+  upload.array("attachments", 10),
+  createTask
+);
 
 // ============================
 // Get Tasks
@@ -42,7 +48,17 @@ router.get(
 
 router.post(
   "/share",
+  upload.array("attachments", 10),
   shareTask
+);
+
+// ============================
+// Task Attachment
+// ============================
+
+router.get(
+  "/:taskId/attachment/:index",
+  getTaskAttachment
 );
 
 // ============================

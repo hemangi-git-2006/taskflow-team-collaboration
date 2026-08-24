@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
 
+
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import DashboardStats from "../components/dashboard/DashboardStats";
 import QuickActions from "../components/dashboard/QuickActions";
@@ -30,11 +31,13 @@ function Dashboard() {
       setProjects(projectRes.data);
       setMembers(memberRes.data);
       setTasks(taskRes.data);
+
     } catch (error) {
       console.log(error);
     }
   };
 
+  // Task statistics
   const completedTasks = tasks.filter(
     (task) => task.status === "Completed"
   ).length;
@@ -48,35 +51,57 @@ function Dashboard() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-slate-100 flex">
 
-      <DashboardHeader />
+    
 
-      <div className="mt-6 lg:mt-8">
-        <DashboardStats
-          totalProjects={projects.length}
-          totalMembers={members.length}
-          totalTasks={tasks.length}
-          completedTasks={completedTasks}
-          inProgressTasks={inProgressTasks}
-          todoTasks={todoTasks}
-        />
-      </div>
+      {/* ================= MAIN CONTENT ================= */}
+      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mt-6 lg:mt-8">
+        {/* Dashboard Header */}
+        <DashboardHeader />
 
-        <div className="lg:col-span-2">
-          <QuickActions />
+
+        {/* Dashboard Statistics */}
+        <div className="mt-6 lg:mt-8">
+
+          <DashboardStats
+            totalProjects={projects.length}
+            totalMembers={members.length}
+            totalTasks={tasks.length}
+            completedTasks={completedTasks}
+            inProgressTasks={inProgressTasks}
+            todoTasks={todoTasks}
+          />
+
         </div>
 
-       <div>
-  <ActivityFeed
-    projects={projects}
-    members={members}
-    tasks={tasks}
-  />
-</div>
-      </div>
+
+        {/* Quick Actions + Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mt-6 lg:mt-8">
+
+          {/* Quick Actions */}
+          <div className="lg:col-span-2">
+
+            <QuickActions />
+
+          </div>
+
+
+          {/* Recent Activity */}
+          <div>
+
+            <ActivityFeed
+              projects={projects}
+              members={members}
+              tasks={tasks}
+            />
+
+          </div>
+
+        </div>
+
+      </main>
 
     </div>
   );

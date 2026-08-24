@@ -1,9 +1,22 @@
 import Task from "../models/Task.js";
 import Project from "../models/Project.js";
+import cloudinary from "../config/cloudinary.js";
 
+// ==========================================
 // Create Task
+// ==========================================
+
 export const createTask = async (req, res) => {
   try {
+     console.log("========== CREATE TASK ==========");
+    console.log("BODY:", req.body);
+    console.log("FILES:", req.files);
+
+    console.log("Cloudinary config:");
+    console.log("Cloud name:", process.env.CLOUDINARY_CLOUD_NAME);
+    console.log("API key exists:", !!process.env.CLOUDINARY_API_KEY);
+    console.log("API secret exists:", !!process.env.CLOUDINARY_API_SECRET);
+
     const {
       title,
       description,
@@ -15,31 +28,106 @@ export const createTask = async (req, res) => {
       deadline,
     } = req.body;
 
-    const task = await Task.create({
+    // ==========================================
+    // Validate required fields
+    // ==========================================
+
+    if (
+      !title ||
+      !description ||
+      !project ||
+      !assignedTo ||
+      !createdBy ||
+      !deadline
+    ) {
+      return res.status(400).json({
+        message: "Required fields are missing",
+      });
+    }
+
+    // ==========================================
+    // Upload images to Cloudinary
+    // ==========================================
+
+    const attachments = [];
+
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const result = await new Promise((resolve, reject) => {
+          const uploadStream =
+            cloudinary.uploader.upload_stream(
+              {
+                folder: "taskflow/tasks",
+                resource_type: "image",
+              },
+              (error, result) => {
+                if (error) {
+                  reject(error);
+                } else {
+                  resolve(result);
+                }
+              }
+            );
+
+          uploadStream.end(file.buffer);
+        });
+
+        attachments.push({
+          url: result.secure_url,
+          filename: file.originalname,
+        });
+      }
+    }
+
+    // ==========================================
+    // Create Task
+    // ==========================================
+
+    const newTask = await Task.create({
       title,
       description,
       project,
       assignedTo,
       createdBy,
-      priority,
-      status,
+      priority: priority || "Medium",
+      status: status || "Todo",
       deadline,
+      attachments,
     });
+
+    // ==========================================
+    // Return created task
+    // ==========================================
+
+    const populatedTask = await Task.findById(
+      newTask._id
+    )
+      .populate("assignedTo", "fullName employeeId")
+      .populate("createdBy", "fullName employeeId")
+      .populate("project", "name");
 
     res.status(201).json({
       message: "Task Created Successfully",
-      task,
+      task: populatedTask,
     });
+
   } catch (error) {
-    console.log(error);
+    console.log(
+      "========== CREATE TASK ERROR =========="
+    );
+
+    console.error(error);
 
     res.status(500).json({
-      message: "Server Error",
+      message: "Unable to create task",
+      error: error.message,
     });
   }
 };
-
+// ==================================================
 // Get All Tasks
+// ==================================================
+
 export const getTasks = async (req, res) => {
   try {
     const tasks = await Task.find()
@@ -48,7 +136,9 @@ export const getTasks = async (req, res) => {
       .populate("project", "name");
 
     res.json(tasks);
+
   } catch (error) {
+
     console.log(error);
 
     res.status(500).json({
@@ -57,21 +147,38 @@ export const getTasks = async (req, res) => {
   }
 };
 
-// =============================
+
+// ==================================================
 // Get Tasks By Project
-// =============================
+// ==================================================
+
 export const getProjectTasks = async (req, res) => {
   try {
+
     const tasks = await Task.find({
       project: req.params.projectId,
     })
-      .populate("assignedTo", "fullName employeeId")
-      .populate("createdBy", "fullName")
-      .populate("project", "name")
-      .populate("sharedWith", "fullName employeeId");
+      .populate(
+        "assignedTo",
+        "fullName employeeId"
+      )
+      .populate(
+        "createdBy",
+        "fullName"
+      )
+      .populate(
+        "project",
+        "name"
+      )
+      .populate(
+        "sharedWith",
+        "fullName employeeId"
+      );
 
     res.json(tasks);
+
   } catch (error) {
+
     console.log(error);
 
     res.status(500).json({
@@ -80,9 +187,14 @@ export const getProjectTasks = async (req, res) => {
   }
 };
 
+
+// ==================================================
 // Get Tasks of Logged-in Member
+// ==================================================
+
 export const getMemberTasks = async (req, res) => {
   try {
+
     const userId = req.params.userId;
 
     const tasks = await Task.find({
@@ -95,13 +207,27 @@ export const getMemberTasks = async (req, res) => {
         },
       ],
     })
-      .populate("project", "name")
-      .populate("createdBy", "fullName")
-      .populate("assignedTo", "fullName employeeId")
-      .populate("sharedWith", "fullName employeeId");
+      .populate(
+        "project",
+        "name"
+      )
+      .populate(
+        "createdBy",
+        "fullName"
+      )
+      .populate(
+        "assignedTo",
+        "fullName employeeId"
+      )
+      .populate(
+        "sharedWith",
+        "fullName employeeId"
+      );
 
     res.json(tasks);
+
   } catch (error) {
+
     console.log(error);
 
     res.status(500).json({
@@ -110,9 +236,14 @@ export const getMemberTasks = async (req, res) => {
   }
 };
 
+
+// ==================================================
 // Get Single Task
+// ==================================================
+
 export const getTaskById = async (req, res) => {
   try {
+
     const task = await Task.findById(req.params.id)
       .populate("assignedTo")
       .populate("createdBy")
@@ -126,7 +257,9 @@ export const getTaskById = async (req, res) => {
     }
 
     res.json(task);
+
   } catch (error) {
+
     console.log(error);
 
     res.status(500).json({
@@ -135,9 +268,102 @@ export const getTaskById = async (req, res) => {
   }
 };
 
+// ==================================================
+// Get Task Attachment Through Backend
+// ==================================================
+
+export const getTaskAttachment = async (req, res) => {
+  try {
+    const { taskId, index } = req.params;
+
+    // Find task
+    const task = await Task.findById(taskId);
+
+    if (!task) {
+      return res.status(404).json({
+        message: "Task not found",
+      });
+    }
+
+    // Convert index to number
+    const attachmentIndex = Number(index);
+
+    if (Number.isNaN(attachmentIndex)) {
+      return res.status(400).json({
+        message: "Invalid attachment index",
+      });
+    }
+
+    // Get attachment
+    const attachment =
+      task.attachments?.[attachmentIndex];
+
+    if (!attachment) {
+      return res.status(404).json({
+        message: "Attachment not found",
+      });
+    }
+
+    if (!attachment.url) {
+      return res.status(404).json({
+        message: "Attachment URL not found",
+      });
+    }
+
+    // Fetch image from Cloudinary
+    const imageResponse = await fetch(
+      attachment.url
+    );
+
+    if (!imageResponse.ok) {
+      return res.status(500).json({
+        message: "Unable to fetch image",
+      });
+    }
+
+    // Get content type
+    const contentType =
+      imageResponse.headers.get("content-type") ||
+      "image/jpeg";
+
+    // Convert response to buffer
+    const imageBuffer = Buffer.from(
+      await imageResponse.arrayBuffer()
+    );
+
+    // Send image through your backend
+    res.setHeader(
+      "Content-Type",
+      contentType
+    );
+
+    res.setHeader(
+      "Cache-Control",
+      "public, max-age=3600"
+    );
+
+    res.send(imageBuffer);
+
+  } catch (error) {
+    console.log(
+      "========== GET TASK ATTACHMENT ERROR =========="
+    );
+
+    console.log(error);
+
+    res.status(500).json({
+      message: "Unable to load attachment",
+      error: error.message,
+    });
+  }
+};
+// ==================================================
 // Update Task
+// ==================================================
+
 export const updateTask = async (req, res) => {
   try {
+
     const task = await Task.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -150,7 +376,9 @@ export const updateTask = async (req, res) => {
       message: "Task Updated Successfully",
       task,
     });
+
   } catch (error) {
+
     console.log(error);
 
     res.status(500).json({
@@ -159,15 +387,24 @@ export const updateTask = async (req, res) => {
   }
 };
 
+
+// ==================================================
 // Delete Task
+// ==================================================
+
 export const deleteTask = async (req, res) => {
   try {
-    await Task.findByIdAndDelete(req.params.id);
+
+    await Task.findByIdAndDelete(
+      req.params.id
+    );
 
     res.json({
       message: "Task Deleted Successfully",
     });
+
   } catch (error) {
+
     console.log(error);
 
     res.status(500).json({
@@ -176,22 +413,30 @@ export const deleteTask = async (req, res) => {
   }
 };
 
+
+// ==================================================
 // Update Task Status
+// ==================================================
+
 export const updateTaskStatus = async (req, res) => {
   try {
+
     const { status } = req.body;
 
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
+    const task =
+      await Task.findByIdAndUpdate(
+        req.params.id,
+        { status },
+        { new: true }
+      );
 
     res.json({
       message: "Task Status Updated",
       task,
     });
+
   } catch (error) {
+
     console.log(error);
 
     res.status(500).json({
@@ -203,15 +448,23 @@ export const updateTaskStatus = async (req, res) => {
 // ==================================================
 // Share Task With Another Project Member
 // ==================================================
+
 export const shareTask = async (req, res) => {
   try {
-    const {
-      taskId,
-      fromMember,
-      toMember,
-      reason,
-      projectId,
-    } = req.body;
+    console.log(
+      "========== SHARE TASK =========="
+    );
+
+    console.log("BODY:", req.body);
+    console.log("FILES:", req.files);
+
+ const {
+  taskId,
+  fromMember,
+  toMember,
+  reason,
+  projectId,
+} = req.body || {};
 
     // --------------------------------------------
     // Validate required fields
@@ -259,7 +512,8 @@ export const shareTask = async (req, res) => {
     // Find project
     // --------------------------------------------
 
-    const project = await Project.findById(projectId);
+    const project =
+      await Project.findById(projectId);
 
     if (!project) {
       return res.status(404).json({
@@ -318,7 +572,7 @@ export const shareTask = async (req, res) => {
     }
 
     // --------------------------------------------
-    // Check if task already shared with member
+    // Check if task already shared
     // --------------------------------------------
 
     const alreadyShared =
@@ -335,11 +589,63 @@ export const shareTask = async (req, res) => {
       });
     }
 
+    // ==========================================
+    // Upload Shared Images
+    // ==========================================
+
+    const newAttachments = [];
+
+    if (
+      req.files &&
+      req.files.length > 0
+    ) {
+
+      for (const file of req.files) {
+
+        const result =
+          await new Promise(
+            (resolve, reject) => {
+
+              const uploadStream =
+                cloudinary.uploader.upload_stream(
+                  {
+                    folder:
+                      "taskflow/tasks",
+                    resource_type:
+                      "image",
+                  },
+                  (error, result) => {
+
+                    if (error) {
+                      reject(error);
+                    } else {
+                      resolve(result);
+                    }
+
+                  }
+                );
+
+              uploadStream.end(
+                file.buffer
+              );
+            }
+          );
+
+        newAttachments.push({
+          url: result.secure_url,
+          filename:
+            file.originalname,
+        });
+      }
+    }
+
     // --------------------------------------------
-    // Add receiver to sharedWith
+    // Add receiver
     // --------------------------------------------
 
-    task.sharedWith.push(toMember);
+    task.sharedWith.push(
+      toMember
+    );
 
     // --------------------------------------------
     // Save sharing information
@@ -351,42 +657,67 @@ export const shareTask = async (req, res) => {
 
     task.sharedAt = new Date();
 
+    // --------------------------------------------
+    // Add uploaded images
+    // --------------------------------------------
+
+    if (newAttachments.length > 0) {
+
+      if (!task.attachments) {
+        task.attachments = [];
+      }
+
+      task.attachments.push(
+        ...newAttachments
+      );
+    }
+
+    // --------------------------------------------
+    // Save task
+    // --------------------------------------------
+
     await task.save();
 
     // --------------------------------------------
     // Return updated task
     // --------------------------------------------
 
-    const updatedTask = await Task.findById(
-      task._id
-    )
-      .populate(
-        "assignedTo",
-        "fullName employeeId"
-      )
-      .populate(
-        "createdBy",
-        "fullName employeeId"
-      )
-      .populate(
-        "project",
-        "name"
-      )
-      .populate(
-        "sharedWith",
-        "fullName employeeId"
-      )
-      .populate(
-        "sharedBy",
-        "fullName employeeId"
-      );
+    const updatedTask =
+      await Task.findById(task._id)
+
+        .populate(
+          "assignedTo",
+          "fullName employeeId"
+        )
+
+        .populate(
+          "createdBy",
+          "fullName employeeId"
+        )
+
+        .populate(
+          "project",
+          "name"
+        )
+
+        .populate(
+          "sharedWith",
+          "fullName employeeId"
+        )
+
+        .populate(
+          "sharedBy",
+          "fullName employeeId"
+        );
 
     res.status(200).json({
-      message: "Task Shared Successfully",
+      message:
+        "Task Shared Successfully",
       task: updatedTask,
     });
 
   } catch (error) {
+
     console.log(
       "========== SHARE TASK ERROR =========="
     );
@@ -394,7 +725,9 @@ export const shareTask = async (req, res) => {
     console.log(error);
 
     res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
+      error: error.message,
     });
   }
 };

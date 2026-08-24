@@ -16,15 +16,15 @@ function EmployeeTaskList({
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [dateFilter, setDateFilter] = useState("All");
   const [projectFilter, setProjectFilter] = useState("All");
+
   const tableContainerRef = useRef(null);
-
-
 
   // ================================
   // FILTER TASKS
   // ================================
 
   const filteredTasks = tasks.filter((task) => {
+
     // Search
     const matchSearch =
       task.title
@@ -97,9 +97,9 @@ function EmployeeTaskList({
         case "This Month":
           matchDate =
             taskDate.getMonth() ===
-            today.getMonth() &&
+              today.getMonth() &&
             taskDate.getFullYear() ===
-            today.getFullYear();
+              today.getFullYear();
 
           break;
 
@@ -116,11 +116,14 @@ function EmployeeTaskList({
       matchProject
     );
   });
-    useEffect(() => {
-      if (tableContainerRef.current) {
-        tableContainerRef.current.scrollLeft = 0;
-      }
-    }, [filteredTasks]);
+
+  // Reset horizontal scroll when filters change
+  useEffect(() => {
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollLeft = 0;
+    }
+  }, [filteredTasks]);
+
   return (
     <section className="w-full">
 
@@ -135,6 +138,7 @@ function EmployeeTaskList({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
 
           <div>
+
             <div className="flex items-center gap-3">
 
               <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
@@ -156,6 +160,7 @@ function EmployeeTaskList({
               </div>
 
             </div>
+
           </div>
 
           {/* Task Count */}
@@ -173,7 +178,6 @@ function EmployeeTaskList({
           </div>
 
         </div>
-
 
         {/* ================================= */}
         {/* FILTERS */}
@@ -226,7 +230,6 @@ function EmployeeTaskList({
 
             </div>
 
-
             {/* Status */}
 
             <select
@@ -268,7 +271,6 @@ function EmployeeTaskList({
               </option>
 
             </select>
-
 
             {/* Priority */}
 
@@ -312,7 +314,6 @@ function EmployeeTaskList({
 
             </select>
 
-
             {/* Project */}
 
             <select
@@ -353,7 +354,6 @@ function EmployeeTaskList({
             </select>
 
           </div>
-
 
           {/* Date filter */}
 
@@ -409,48 +409,53 @@ function EmployeeTaskList({
 
         </div>
 
-
         {/* ================================= */}
         {/* TABLE */}
         {/* ================================= */}
 
-       <div className="w-full rounded-2xl border border-slate-200 overflow-hidden">
+        <div
+          ref={tableContainerRef}
+          className="w-full rounded-2xl border border-slate-200 overflow-x-auto"
+        >
 
-          <table className="w-full table-fixed">
+          <table className="w-full min-w-[1000px]">
 
-           <thead className="bg-slate-900 text-white">
-  <tr>
+            <thead className="bg-slate-900 text-white">
 
-    <th className="w-[18%] text-left px-2 sm:px-4 py-4 text-xs sm:text-sm">
-      Task
-    </th>
+              <tr>
 
-    <th className="w-[13%] text-left px-2 sm:px-4 py-4 text-xs sm:text-sm">
-      Project
-    </th>
+                <th className="w-[22%] px-4 py-4 text-left">
+                  Task
+                </th>
 
-    <th className="w-[18%] text-left px-2 sm:px-4 py-4 text-xs sm:text-sm">
-      Assigned By
-    </th>
+                <th className="w-[14%] px-4 py-4 text-left">
+                  Attachments
+                </th>
 
-    <th className="w-[11%] text-left px-2 sm:px-4 py-4 text-xs sm:text-sm">
-      Priority
-    </th>
+                <th className="w-[20%] px-4 py-4 text-left">
+                  Assigned By
+                </th>
 
-    <th className="w-[15%] text-left px-2 sm:px-4 py-4 text-xs sm:text-sm">
-      Deadline
-    </th>
+                <th className="w-[12%] px-4 py-4 text-left">
+                  Priority
+                </th>
 
-    <th className="w-[11%] text-left px-2 sm:px-4 py-4 text-xs sm:text-sm">
-      Status
-    </th>
+                <th className="w-[14%] px-4 py-4 text-left">
+                  Deadline
+                </th>
 
-    <th className="w-[14%] text-center px-2 sm:px-4 py-4 text-xs sm:text-sm">
-      Action
-    </th>
+                <th className="w-[10%] px-4 py-4 text-left">
+                  Status
+                </th>
 
-  </tr>
-</thead>
+                <th className="w-[12%] px-4 py-4 text-center">
+                  Action
+                </th>
+
+              </tr>
+
+            </thead>
+
             <tbody>
 
               {filteredTasks.length === 0 ? (

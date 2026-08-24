@@ -48,6 +48,24 @@ const taskSchema = new mongoose.Schema(
     },
 
     // ============================
+    // Task Attachments
+    // ============================
+
+    attachments: [
+      {
+        url: {
+          type: String,
+          required: true,
+        },
+
+        filename: {
+          type: String,
+          default: "",
+        },
+      },
+    ],
+
+    // ============================
     // Shared Task Information
     // ============================
 
