@@ -8,17 +8,24 @@ import Project from "../models/Project.js";
 export const createMember = async (req, res) => {
   try {
     const {
+      employeeId,
       fullName,
       email,
+      password,
     } = req.body;
 
     // ========================================
     // Validate required fields
     // ========================================
-    if (!fullName || !email) {
+    if (
+      !employeeId ||
+      !fullName ||
+      !email ||
+      !password
+    ) {
       return res.status(400).json({
         message:
-          "Full Name and Email are required",
+          "Employee ID, Full Name, Email and Password are required",
       });
     }
 
@@ -26,85 +33,73 @@ export const createMember = async (req, res) => {
     const adminId = req.user._id;
 
     // ========================================
-    // Check duplicate email
+    // Check duplicate Employee ID
+    // ONLY for this admin
     // ========================================
-    const existingEmail = await User.findOne({
-      email: email.trim().toLowerCase(),
-    });
+    const existingEmployee =
+      await User.findOne({
+        employeeId:
+          employeeId.trim(),
+        role: "Member",
+        createdBy: adminId,
+      });
 
-    if (existingEmail) {
+    if (existingEmployee) {
       return res.status(400).json({
-        message: "Email already exists",
+        message:
+          "Employee ID already exists for your account",
       });
     }
 
     // ========================================
-    // Get members created by this admin
+    // Check duplicate email
     // ========================================
-    const members = await User.find({
-      role: "Member",
-      createdBy: adminId,
-      employeeId: {
-        $exists: true,
-        $ne: "",
-      },
-    }).select("employeeId");
+    const existingEmail =
+      await User.findOne({
+        email:
+          email.trim().toLowerCase(),
+      });
 
-    // ========================================
-    // Find highest employee number
-    // ========================================
-    let maxNumber = 0;
-
-    members.forEach((member) => {
-      const match = member.employeeId?.match(
-        /^EMP(\d+)$/
-      );
-
-      if (match) {
-        const number = parseInt(
-          match[1],
-          10
-        );
-
-        if (number > maxNumber) {
-          maxNumber = number;
-        }
-      }
-    });
-
-    // ========================================
-    // Generate Employee ID
-    // ========================================
-    const employeeId = `EMP${String(
-      maxNumber + 1
-    ).padStart(3, "0")}`;
-
-    // ========================================
-    // Generate temporary password
-    // ========================================
-    const temporaryPassword =
-      `${employeeId}@123`;
+    if (existingEmail) {
+      return res.status(400).json({
+        message:
+          "Email already exists",
+      });
+    }
 
     // ========================================
     // Hash password
     // ========================================
     const hashedPassword =
       await bcrypt.hash(
-        temporaryPassword,
+        password,
         10
       );
 
     // ========================================
     // Create Member
     // ========================================
-    const member = await User.create({
-      employeeId,
-      fullName: fullName.trim(),
-      email: email.trim().toLowerCase(),
-      password: hashedPassword,
-      role: "Member",
-      createdBy: adminId,
-    });
+    const member =
+      await User.create({
+        employeeId:
+          employeeId.trim(),
+
+        fullName:
+          fullName.trim(),
+
+        email:
+          email
+            .trim()
+            .toLowerCase(),
+
+        password:
+          hashedPassword,
+
+        role: "Member",
+
+        createdBy:
+          adminId,
+      });
 
     // ========================================
     // Response
@@ -115,22 +110,25 @@ export const createMember = async (req, res) => {
 
       member: {
         _id: member._id,
-        employeeId: member.employeeId,
-        fullName: member.fullName,
-        email: member.email,
-        role: member.role,
+        employeeId:
+          member.employeeId,
+        fullName:
+          member.fullName,
+        email:
+          member.email,
+        role:
+          member.role,
       },
-
-      temporaryPassword,
     });
 
   } catch (error) {
+
     console.log(
       "CREATE MEMBER ERROR:",
       error
     );
 
-    // Duplicate key
+    // Duplicate key protection
     if (error.code === 11000) {
       return res.status(400).json({
         message:
@@ -139,8 +137,11 @@ export const createMember = async (req, res) => {
     }
 
     res.status(500).json({
-      message: "Server Error",
-      error: error.message,
+      message:
+        "Server Error",
+
+      error:
+        error.message,
     });
   }
 };
@@ -169,13 +170,15 @@ export const addMember = async (req, res) => {
     // ========================================
     // Find Project
     // ========================================
-    const project = await Project.findById(
-      projectId
-    );
+    const project =
+      await Project.findById(
+        projectId
+      );
 
     if (!project) {
       return res.status(404).json({
-        message: "Project not found",
+        message:
+          "Project not found",
       });
     }
 
@@ -195,11 +198,16 @@ export const addMember = async (req, res) => {
     // ========================================
     // Find member belonging to this admin
     // ========================================
-    const employee = await User.findOne({
-      employeeId: employeeId.trim(),
-      role: "Member",
-      createdBy: req.user._id,
-    });
+    const employee =
+      await User.findOne({
+        employeeId:
+          employeeId.trim(),
+
+        role: "Member",
+
+        createdBy:
+          req.user._id,
+      });
 
     if (!employee) {
       return res.status(404).json({
@@ -228,10 +236,13 @@ export const addMember = async (req, res) => {
     // Add existing member to project
     // ========================================
     await Project.updateOne(
-      { _id: projectId },
+      {
+        _id: projectId,
+      },
       {
         $addToSet: {
-          members: employee._id,
+          members:
+            employee._id,
         },
       }
     );
@@ -241,23 +252,36 @@ export const addMember = async (req, res) => {
         "Member Added To Project Successfully",
 
       member: {
-        _id: employee._id,
-        employeeId: employee.employeeId,
-        fullName: employee.fullName,
-        email: employee.email,
-        role: employee.role,
+        _id:
+          employee._id,
+
+        employeeId:
+          employee.employeeId,
+
+        fullName:
+          employee.fullName,
+
+        email:
+          employee.email,
+
+        role:
+          employee.role,
       },
     });
 
   } catch (error) {
+
     console.log(
       "ADD MEMBER ERROR:",
       error
     );
 
     res.status(500).json({
-      message: "Server Error",
-      error: error.message,
+      message:
+        "Server Error",
+
+      error:
+        error.message,
     });
   }
 };
@@ -266,18 +290,24 @@ export const addMember = async (req, res) => {
 // ========================================
 // Get Members Of One Project
 // ========================================
-export const getProjectMembers = async (req, res) => {
+export const getProjectMembers = async (
+  req,
+  res
+) => {
   try {
-    const project = await Project.findById(
-      req.params.projectId
-    ).populate(
-      "members",
-      "fullName email employeeId role profileImage"
-    );
+
+    const project =
+      await Project.findById(
+        req.params.projectId
+      ).populate(
+        "members",
+        "fullName email employeeId role profileImage"
+      );
 
     if (!project) {
       return res.status(404).json({
-        message: "Project not found",
+        message:
+          "Project not found",
       });
     }
 
@@ -292,9 +322,12 @@ export const getProjectMembers = async (req, res) => {
       });
     }
 
-    res.json(project.members);
+    res.json(
+      project.members
+    );
 
   } catch (error) {
+
     console.error(
       "========== GET PROJECT MEMBERS ERROR =========="
     );
@@ -302,8 +335,11 @@ export const getProjectMembers = async (req, res) => {
     console.error(error);
 
     res.status(500).json({
-      message: "Server Error",
-      error: error.message,
+      message:
+        "Server Error",
+
+      error:
+        error.message,
     });
   }
 };
@@ -312,25 +348,36 @@ export const getProjectMembers = async (req, res) => {
 // ========================================
 // Get All Members Created By Logged-in Admin
 // ========================================
-export const getAllMembers = async (req, res) => {
+export const getAllMembers = async (
+  req,
+  res
+) => {
   try {
-    const members = await User.find({
-      role: "Member",
-      createdBy: req.user._id,
-    }).select(
-      "fullName email employeeId role profileImage"
+
+    const members =
+      await User.find({
+        role: "Member",
+
+        createdBy:
+          req.user._id,
+      }).select(
+        "fullName email employeeId role profileImage"
+      );
+
+    res.json(
+      members
     );
 
-    res.json(members);
-
   } catch (error) {
+
     console.log(
       "GET ALL MEMBERS ERROR:",
       error
     );
 
     res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
   }
 };
@@ -339,52 +386,76 @@ export const getAllMembers = async (req, res) => {
 // ========================================
 // Get Next Employee ID
 // ========================================
-export const getNextEmployeeId = async (req, res) => {
+export const getNextEmployeeId = async (
+  req,
+  res
+) => {
   try {
-    const members = await User.find({
-      role: "Member",
-      createdBy: req.user._id,
-      employeeId: {
-        $exists: true,
-        $ne: "",
-      },
-    }).select("employeeId");
+
+    const members =
+      await User.find({
+        role: "Member",
+
+        createdBy:
+          req.user._id,
+
+        employeeId: {
+          $exists: true,
+
+          $ne: "",
+        },
+      }).select(
+        "employeeId"
+      );
 
     let maxNumber = 0;
 
-    members.forEach((member) => {
-      const match = member.employeeId?.match(
-        /^EMP(\d+)$/
-      );
+    members.forEach(
+      (member) => {
 
-      if (match) {
-        const number = parseInt(
-          match[1],
-          10
-        );
+        const match =
+          member.employeeId?.match(
+            /^EMP(\d+)$/
+          );
 
-        if (number > maxNumber) {
-          maxNumber = number;
+        if (match) {
+
+          const number =
+            parseInt(
+              match[1],
+              10
+            );
+
+          if (
+            number >
+            maxNumber
+          ) {
+            maxNumber =
+              number;
+          }
         }
       }
-    });
+    );
 
-    const employeeId = `EMP${String(
-      maxNumber + 1
-    ).padStart(3, "0")}`;
+    const employeeId =
+      `EMP${String(
+        maxNumber + 1
+      ).padStart(3, "0")}`;
 
     res.json({
       employeeId,
     });
 
   } catch (error) {
+
     console.log(
       "GET NEXT EMPLOYEE ID ERROR:",
       error
     );
 
     res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
   }
 };
@@ -393,19 +464,31 @@ export const getNextEmployeeId = async (req, res) => {
 // ========================================
 // Update Member
 // ========================================
-export const updateMember = async (req, res) => {
+export const updateMember = async (
+  req,
+  res
+) => {
   try {
-    const member = await User.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        role: "Member",
-        createdBy: req.user._id,
-      },
-      req.body,
-      {
-        new: true,
-      }
-    );
+
+    const member =
+      await User.findOneAndUpdate(
+        {
+          _id:
+            req.params.id,
+
+          role:
+            "Member",
+
+          createdBy:
+            req.user._id,
+        },
+
+        req.body,
+
+        {
+          new: true,
+        }
+      );
 
     if (!member) {
       return res.status(404).json({
@@ -417,17 +500,20 @@ export const updateMember = async (req, res) => {
     res.json({
       message:
         "Member Updated Successfully",
+
       member,
     });
 
   } catch (error) {
+
     console.log(
       "UPDATE MEMBER ERROR:",
       error
     );
 
     res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
   }
 };
@@ -436,14 +522,24 @@ export const updateMember = async (req, res) => {
 // ========================================
 // Delete Member
 // ========================================
-export const deleteMember = async (req, res) => {
+export const deleteMember = async (
+  req,
+  res
+) => {
   try {
+
     // Find member belonging to this admin
-    const member = await User.findOne({
-      _id: req.params.id,
-      role: "Member",
-      createdBy: req.user._id,
-    });
+    const member =
+      await User.findOne({
+        _id:
+          req.params.id,
+
+        role:
+          "Member",
+
+        createdBy:
+          req.user._id,
+      });
 
     if (!member) {
       return res.status(404).json({
@@ -456,12 +552,17 @@ export const deleteMember = async (req, res) => {
     // owned by this admin
     await Project.updateMany(
       {
-        createdBy: req.user._id,
-        members: member._id,
+        createdBy:
+          req.user._id,
+
+        members:
+          member._id,
       },
+
       {
         $pull: {
-          members: member._id,
+          members:
+            member._id,
         },
       }
     );
@@ -477,13 +578,15 @@ export const deleteMember = async (req, res) => {
     });
 
   } catch (error) {
+
     console.log(
       "DELETE MEMBER ERROR:",
       error
     );
 
     res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
   }
 };
@@ -493,53 +596,75 @@ export const deleteMember = async (req, res) => {
 // Get All Team Members
 // For Logged-in Employee
 // ========================================
-export const getMyTeamMembers = async (req, res) => {
+export const getMyTeamMembers = async (
+  req,
+  res
+) => {
   try {
-    // Use authenticated user
-    const userId = req.user._id;
 
-    // Find projects where current user is a member
-    const projects = await Project.find({
-      members: userId,
-    }).populate(
-      "members",
-      "fullName email employeeId role profileImage"
-    );
+    // Use authenticated user
+    const userId =
+      req.user._id;
+
+    // Find projects where current user
+    // is a member
+    const projects =
+      await Project.find({
+        members:
+          userId,
+      }).populate(
+        "members",
+        "fullName email employeeId role profileImage"
+      );
 
     // Store unique members
-    const membersMap = new Map();
+    const membersMap =
+      new Map();
 
-    projects.forEach((project) => {
-      project.members.forEach((member) => {
+    projects.forEach(
+      (project) => {
 
-        // Don't show logged-in member
-        if (
-          member._id.toString() !==
-          userId.toString()
-        ) {
-          membersMap.set(
-            member._id.toString(),
-            member
-          );
-        }
+        project.members.forEach(
+          (member) => {
 
-      });
-    });
+            // Don't show logged-in member
+            if (
+              member._id.toString() !==
+              userId.toString()
+            ) {
 
-    const members = Array.from(
-      membersMap.values()
+              membersMap.set(
+                member._id.toString(),
+                member
+              );
+
+            }
+
+          }
+        );
+
+      }
     );
 
-    res.json(members);
+    const members =
+      Array.from(
+        membersMap.values()
+      );
+
+    res.json(
+      members
+    );
 
   } catch (error) {
+
     console.log(
       "GET MY TEAM MEMBERS ERROR:",
       error
     );
 
     res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
   }
 };
@@ -548,15 +673,25 @@ export const getMyTeamMembers = async (req, res) => {
 // ========================================
 // Get Single Member By ID
 // ========================================
-export const getMemberById = async (req, res) => {
+export const getMemberById = async (
+  req,
+  res
+) => {
   try {
-    const member = await User.findOne({
-      _id: req.params.id,
-      role: "Member",
-      createdBy: req.user._id,
-    }).select(
-      "fullName email employeeId role profileImage"
-    );
+
+    const member =
+      await User.findOne({
+        _id:
+          req.params.id,
+
+        role:
+          "Member",
+
+        createdBy:
+          req.user._id,
+      }).select(
+        "fullName email employeeId role profileImage"
+      );
 
     if (!member) {
       return res.status(404).json({
@@ -565,16 +700,20 @@ export const getMemberById = async (req, res) => {
       });
     }
 
-    res.json(member);
+    res.json(
+      member
+    );
 
   } catch (error) {
+
     console.log(
       "GET MEMBER BY ID ERROR:",
       error
     );
 
     res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
   }
 };
