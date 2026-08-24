@@ -2,9 +2,9 @@ import AdminComments from "../components/AdminComments";
 
 function AdminCommentsPage() {
   return (
-    <main className="flex-1 min-w-0">
+    <div className="w-full min-h-screen">
       <AdminComments />
-    </main>
+    </div>
   );
 }
 
