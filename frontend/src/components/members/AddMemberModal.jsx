@@ -16,6 +16,7 @@ function AddMemberModal({
     employeeId: "",
     fullName: "",
     email: "",
+    password: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -80,12 +81,14 @@ function AddMemberModal({
         if (
           !formData.employeeId ||
           !formData.fullName ||
-          !formData.email
+          !formData.email ||
+          !formData.password
         ) {
           alert("Please fill all fields");
           return;
         }
 
+        // Create new member
         const response = await API.post(
           "/members/create",
           {
@@ -97,14 +100,19 @@ function AddMemberModal({
 
             email:
               formData.email.trim(),
+
+            password:
+              formData.password,
           }
         );
 
         const newMember =
           response.data.member;
 
+        // ====================================
         // Add newly created member
         // to current project
+        // ====================================
         await API.post("/members", {
           employeeId:
             newMember.employeeId,
@@ -151,7 +159,6 @@ function AddMemberModal({
         error.response?.data?.message ||
         "Failed to process member"
       );
-
     } finally {
       setLoading(false);
     }
@@ -200,6 +207,7 @@ function AddMemberModal({
                 employeeId: "",
                 fullName: "",
                 email: "",
+                password: "",
               });
             }}
             className={`flex-1 py-3 rounded-lg font-semibold transition ${
@@ -379,6 +387,25 @@ function AddMemberModal({
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="Email Address"
+                  required
+                  className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                />
+
+              </div>
+
+              {/* Password */}
+              <div>
+
+                <label className="block mb-2 font-medium text-slate-700">
+                  Password
+                </label>
+
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="Enter Password"
                   required
                   className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 />
