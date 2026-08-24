@@ -386,80 +386,63 @@ export const getAllMembers = async (
 // ========================================
 // Get Next Employee ID
 // ========================================
-export const getNextEmployeeId = async (
-  req,
-  res
-) => {
+// ========================================
+// Get Next Available Employee ID
+// ========================================
+export const getNextEmployeeId = async (req, res) => {
   try {
+    const members = await User.find({
+      role: "Member",
+      createdBy: req.user._id,
+      employeeId: {
+        $exists: true,
+        $ne: "",
+      },
+    }).select("employeeId");
 
-    const members =
-      await User.find({
-        role: "Member",
+    // Store existing employee numbers
+    const usedNumbers = new Set();
 
-        createdBy:
-          req.user._id,
-
-        employeeId: {
-          $exists: true,
-
-          $ne: "",
-        },
-      }).select(
-        "employeeId"
+    members.forEach((member) => {
+      const match = member.employeeId?.match(
+        /^EMP(\d+)$/
       );
 
-    let maxNumber = 0;
-
-    members.forEach(
-      (member) => {
-
-        const match =
-          member.employeeId?.match(
-            /^EMP(\d+)$/
-          );
-
-        if (match) {
-
-          const number =
-            parseInt(
-              match[1],
-              10
-            );
-
-          if (
-            number >
-            maxNumber
-          ) {
-            maxNumber =
-              number;
-          }
-        }
+      if (match) {
+        usedNumbers.add(
+          parseInt(match[1], 10)
+        );
       }
-    );
+    });
 
-    const employeeId =
-      `EMP${String(
-        maxNumber + 1
-      ).padStart(3, "0")}`;
+    // Find the smallest available number
+    let nextNumber = 1;
+
+    while (
+      usedNumbers.has(nextNumber)
+    ) {
+      nextNumber++;
+    }
+
+    const employeeId = `EMP${String(
+      nextNumber
+    ).padStart(3, "0")}`;
 
     res.json({
       employeeId,
     });
 
   } catch (error) {
-
     console.log(
       "GET NEXT EMPLOYEE ID ERROR:",
       error
     );
 
     res.status(500).json({
-      message:
-        "Server Error",
+      message: "Server Error",
     });
   }
 };
-
 
 // ========================================
 // Update Member
