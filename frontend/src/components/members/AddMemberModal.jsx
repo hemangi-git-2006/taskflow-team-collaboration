@@ -6,13 +6,23 @@ function AddMemberModal({
   projectId,
   refreshMembers,
 }) {
+  const [mode, setMode] = useState("existing");
+
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] =
     useState(null);
 
+  const [formData, setFormData] = useState({
+    employeeId: "",
+    fullName: "",
+    email: "",
+  });
+
   const [loading, setLoading] = useState(false);
 
+  // ========================================
   // Fetch Existing Employees
+  // ========================================
   useEffect(() => {
     const getEmployees = async () => {
       try {
@@ -30,7 +40,9 @@ function AddMemberModal({
     getEmployees();
   }, []);
 
-  // Select Employee
+  // ========================================
+  // Select Existing Employee
+  // ========================================
   const handleEmployeeChange = (e) => {
     const employeeId = e.target.value;
 
@@ -42,38 +54,104 @@ function AddMemberModal({
     setSelectedEmployee(employee || null);
   };
 
-  // Add Existing Employee To Project
+  // ========================================
+  // Handle New Member Inputs
+  // ========================================
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  // ========================================
+  // Submit
+  // ========================================
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!selectedEmployee) {
-      alert("Please select an employee");
-      return;
-    }
 
     try {
       setLoading(true);
 
-      await API.post("/members", {
-        employeeId:
-          selectedEmployee.employeeId,
+      // ====================================
+      // CREATE NEW MEMBER
+      // ====================================
+      if (mode === "new") {
+        if (
+          !formData.employeeId ||
+          !formData.fullName ||
+          !formData.email
+        ) {
+          alert("Please fill all fields");
+          return;
+        }
 
-        projectId,
-      });
+        const response = await API.post(
+          "/members/create",
+          {
+            employeeId:
+              formData.employeeId.trim(),
 
-      alert(
-        "Member Added To Project Successfully"
-      );
+            fullName:
+              formData.fullName.trim(),
+
+            email:
+              formData.email.trim(),
+          }
+        );
+
+        const newMember =
+          response.data.member;
+
+        // Add newly created member
+        // to current project
+        await API.post("/members", {
+          employeeId:
+            newMember.employeeId,
+
+          projectId,
+        });
+
+        alert(
+          "Member created and added successfully"
+        );
+      }
+
+      // ====================================
+      // ADD EXISTING MEMBER
+      // ====================================
+      else {
+        if (!selectedEmployee) {
+          alert("Please select an employee");
+          return;
+        }
+
+        await API.post("/members", {
+          employeeId:
+            selectedEmployee.employeeId,
+
+          projectId,
+        });
+
+        alert(
+          "Member Added To Project Successfully"
+        );
+      }
 
       refreshMembers();
-
       closeModal();
 
     } catch (error) {
+      console.log(
+        "MEMBER ERROR:",
+        error
+      );
+
       alert(
         error.response?.data?.message ||
-        "Failed to add member"
+        "Failed to process member"
       );
+
     } finally {
       setLoading(false);
     }
@@ -84,139 +162,234 @@ function AddMemberModal({
 
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 lg:p-8">
 
+        {/* ================================= */}
+        {/* Header */}
+        {/* ================================= */}
+
         <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-slate-800">
           Add Member
         </h2>
+
+        {/* ================================= */}
+        {/* Mode Buttons */}
+        {/* ================================= */}
+
+        <div className="flex gap-2 mb-6">
+
+          <button
+            type="button"
+            onClick={() => {
+              setMode("existing");
+              setSelectedEmployee(null);
+            }}
+            className={`flex-1 py-3 rounded-lg font-semibold transition ${
+              mode === "existing"
+                ? "bg-teal-600 text-white"
+                : "bg-slate-100 text-slate-700"
+            }`}
+          >
+            Existing Member
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMode("new");
+              setSelectedEmployee(null);
+              setFormData({
+                employeeId: "",
+                fullName: "",
+                email: "",
+              });
+            }}
+            className={`flex-1 py-3 rounded-lg font-semibold transition ${
+              mode === "new"
+                ? "bg-teal-600 text-white"
+                : "bg-slate-100 text-slate-700"
+            }`}
+          >
+            Create New Member
+          </button>
+
+        </div>
 
         <form
           onSubmit={handleSubmit}
           className="space-y-5"
         >
 
-          {/* Select Employee */}
+          {/* ================================= */}
+          {/* EXISTING MEMBER */}
+          {/* ================================= */}
 
-          <div>
+          {mode === "existing" && (
+            <>
+              {/* Select Employee */}
+              <div>
 
-            <label className="block mb-2 font-medium text-slate-700">
-              Select Employee
-            </label>
+                <label className="block mb-2 font-medium text-slate-700">
+                  Select Employee
+                </label>
 
-            <select
-              value={
-                selectedEmployee?.employeeId ||
-                ""
-              }
-              onChange={handleEmployeeChange}
-              className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              required
-            >
-
-              <option value="">
-                Select an employee
-              </option>
-
-              {employees.map((employee) => (
-
-                <option
-                  key={employee._id}
-                  value={employee.employeeId}
+                <select
+                  value={
+                    selectedEmployee?.employeeId ||
+                    ""
+                  }
+                  onChange={handleEmployeeChange}
+                  required
+                  className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 >
-                  {employee.fullName} -{" "}
-                  {employee.employeeId}
-                </option>
 
-              ))}
+                  <option value="">
+                    Select an employee
+                  </option>
 
-            </select>
+                  {employees.map(
+                    (employee) => (
+                      <option
+                        key={employee._id}
+                        value={employee.employeeId}
+                      >
+                        {employee.fullName} -{" "}
+                        {employee.employeeId}
+                      </option>
+                    )
+                  )}
 
-          </div>
+                </select>
+              </div>
 
-          {/* Employee ID */}
+              {/* Employee ID */}
+              <div>
 
-          <div>
+                <label className="block mb-2 font-medium text-slate-700">
+                  Employee ID
+                </label>
 
-            <label className="block mb-2 font-medium text-slate-700">
-              Employee ID
-            </label>
+                <input
+                  type="text"
+                  value={
+                    selectedEmployee?.employeeId ||
+                    ""
+                  }
+                  readOnly
+                  placeholder="Employee ID"
+                  className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 text-slate-600 cursor-not-allowed"
+                />
 
-            <input
-              type="text"
-              value={
-                selectedEmployee?.employeeId ||
-                ""
-              }
-              readOnly
-              placeholder="Employee ID"
-              className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 text-slate-600 cursor-not-allowed"
-            />
+              </div>
 
-          </div>
+              {/* Full Name */}
+              <div>
 
-          {/* Full Name */}
+                <label className="block mb-2 font-medium text-slate-700">
+                  Full Name
+                </label>
 
-          <div>
+                <input
+                  type="text"
+                  value={
+                    selectedEmployee?.fullName ||
+                    ""
+                  }
+                  readOnly
+                  placeholder="Full Name"
+                  className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 text-slate-600 cursor-not-allowed"
+                />
 
-            <label className="block mb-2 font-medium text-slate-700">
-              Full Name
-            </label>
+              </div>
 
-            <input
-              type="text"
-              value={
-                selectedEmployee?.fullName ||
-                ""
-              }
-              readOnly
-              placeholder="Full Name"
-              className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 text-slate-600 cursor-not-allowed"
-            />
+              {/* Email */}
+              <div>
 
-          </div>
+                <label className="block mb-2 font-medium text-slate-700">
+                  Email
+                </label>
 
-          {/* Email */}
+                <input
+                  type="email"
+                  value={
+                    selectedEmployee?.email ||
+                    ""
+                  }
+                  readOnly
+                  placeholder="Email Address"
+                  className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 text-slate-600 cursor-not-allowed"
+                />
 
-          <div>
-
-            <label className="block mb-2 font-medium text-slate-700">
-              Email
-            </label>
-
-            <input
-              type="email"
-              value={
-                selectedEmployee?.email || ""
-              }
-              readOnly
-              placeholder="Email Address"
-              className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 text-slate-600 cursor-not-allowed"
-            />
-
-          </div>
-
-          {/* Selected Employee Information */}
-
-          {selectedEmployee && (
-
-            <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
-
-              <p className="text-sm text-teal-700">
-                You are adding:
-              </p>
-
-              <p className="font-bold text-slate-800 mt-1">
-                {selectedEmployee.fullName}
-              </p>
-
-              <p className="text-sm text-slate-600 mt-1">
-                Employee ID:{" "}
-                {selectedEmployee.employeeId}
-              </p>
-
-            </div>
-
+              </div>
+            </>
           )}
 
+          {/* ================================= */}
+          {/* CREATE NEW MEMBER */}
+          {/* ================================= */}
+
+          {mode === "new" && (
+            <>
+              {/* Employee ID */}
+              <div>
+
+                <label className="block mb-2 font-medium text-slate-700">
+                  Employee ID
+                </label>
+
+                <input
+                  type="text"
+                  name="employeeId"
+                  value={formData.employeeId}
+                  onChange={handleInputChange}
+                  placeholder="EMP001"
+                  required
+                  className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                />
+
+              </div>
+
+              {/* Full Name */}
+              <div>
+
+                <label className="block mb-2 font-medium text-slate-700">
+                  Full Name
+                </label>
+
+                <input
+                  type="text"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  placeholder="Full Name"
+                  required
+                  className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                />
+
+              </div>
+
+              {/* Email */}
+              <div>
+
+                <label className="block mb-2 font-medium text-slate-700">
+                  Email
+                </label>
+
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="Email Address"
+                  required
+                  className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                />
+
+              </div>
+            </>
+          )}
+
+          {/* ================================= */}
           {/* Buttons */}
+          {/* ================================= */}
 
           <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-3">
 
@@ -231,12 +404,16 @@ function AddMemberModal({
             <button
               type="submit"
               disabled={
-                loading || !selectedEmployee
+                loading ||
+                (mode === "existing" &&
+                  !selectedEmployee)
               }
               className="w-full sm:w-auto bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading
-                ? "Adding..."
+                ? "Processing..."
+                : mode === "new"
+                ? "Create & Add Member"
                 : "Add Member"}
             </button>
 
@@ -245,7 +422,6 @@ function AddMemberModal({
         </form>
 
       </div>
-
     </div>
   );
 }
