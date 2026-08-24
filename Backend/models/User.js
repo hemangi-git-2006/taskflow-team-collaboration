@@ -10,8 +10,6 @@ const userSchema = new mongoose.Schema(
 
     employeeId: {
       type: String,
-      unique: true,
-      sparse: true,
       trim: true,
     },
 
@@ -40,9 +38,7 @@ const userSchema = new mongoose.Schema(
       default: "Member",
     },
 
-    // ========================================
-    // Member belongs to which Admin
-    // ========================================
+    // Member belongs to this Admin
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -61,6 +57,26 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+  }
+);
+
+// ========================================
+// Employee ID unique per Admin
+// ========================================
+userSchema.index(
+  {
+    createdBy: 1,
+    employeeId: 1,
+  },
+  {
+    unique: true,
+    partialFilterExpression: {
+      role: "Member",
+      employeeId: {
+        $exists: true,
+        $ne: "",
+      },
+    },
   }
 );
 

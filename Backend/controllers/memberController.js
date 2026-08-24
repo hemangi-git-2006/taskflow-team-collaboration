@@ -1,6 +1,6 @@
+import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import Project from "../models/Project.js";
-
 
 // ========================================
 // Create Member
@@ -8,47 +8,120 @@ import Project from "../models/Project.js";
 export const createMember = async (req, res) => {
   try {
     const {
-      employeeId,
       fullName,
       email,
     } = req.body;
 
-    if (
-      !employeeId ||
-      !fullName ||
-      !email
-    ) {
+    // ========================================
+    // Validate required fields
+    // ========================================
+    if (!fullName || !email) {
       return res.status(400).json({
         message:
-          "Employee ID, Full Name and Email are required",
+          "Full Name and Email are required",
       });
     }
 
-    const existingMember =
-      await User.findOne({
-        employeeId,
-        createdBy: req.user._id,
-      });
+    // Logged-in admin
+    const adminId = req.user._id;
 
-    if (existingMember) {
-      return res.status(400).json({
-        message:
-          "Employee ID already exists",
-      });
-    }
-
-    const member = await User.create({
-      employeeId,
-      fullName,
-      email,
-      role: "Member",
-      createdBy: req.user._id,
+    // ========================================
+    // Check duplicate email
+    // ========================================
+    const existingEmail = await User.findOne({
+      email: email.trim().toLowerCase(),
     });
 
+    if (existingEmail) {
+      return res.status(400).json({
+        message: "Email already exists",
+      });
+    }
+
+    // ========================================
+    // Get members created by this admin
+    // ========================================
+    const members = await User.find({
+      role: "Member",
+      createdBy: adminId,
+      employeeId: {
+        $exists: true,
+        $ne: "",
+      },
+    }).select("employeeId");
+
+    // ========================================
+    // Find highest employee number
+    // ========================================
+    let maxNumber = 0;
+
+    members.forEach((member) => {
+      const match = member.employeeId?.match(
+        /^EMP(\d+)$/
+      );
+
+      if (match) {
+        const number = parseInt(
+          match[1],
+          10
+        );
+
+        if (number > maxNumber) {
+          maxNumber = number;
+        }
+      }
+    });
+
+    // ========================================
+    // Generate Employee ID
+    // ========================================
+    const employeeId = `EMP${String(
+      maxNumber + 1
+    ).padStart(3, "0")}`;
+
+    // ========================================
+    // Generate temporary password
+    // ========================================
+    const temporaryPassword =
+      `${employeeId}@123`;
+
+    // ========================================
+    // Hash password
+    // ========================================
+    const hashedPassword =
+      await bcrypt.hash(
+        temporaryPassword,
+        10
+      );
+
+    // ========================================
+    // Create Member
+    // ========================================
+    const member = await User.create({
+      employeeId,
+      fullName: fullName.trim(),
+      email: email.trim().toLowerCase(),
+      password: hashedPassword,
+      role: "Member",
+      createdBy: adminId,
+    });
+
+    // ========================================
+    // Response
+    // ========================================
     res.status(201).json({
       message:
         "Member Created Successfully",
-      member,
+
+      member: {
+        _id: member._id,
+        employeeId: member.employeeId,
+        fullName: member.fullName,
+        email: member.email,
+        role: member.role,
+      },
+
+      temporaryPassword,
     });
 
   } catch (error) {
@@ -57,23 +130,48 @@ export const createMember = async (req, res) => {
       error
     );
 
+    // Duplicate key
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message:
+          "Employee ID or Email already exists",
+      });
+    }
+
     res.status(500).json({
       message: "Server Error",
       error: error.message,
     });
   }
 };
+
+
 // ========================================
-// Add Member To Project
+// Add Existing Member To Project
 // ========================================
 export const addMember = async (req, res) => {
   try {
-    const { employeeId, projectId } = req.body;
+    const {
+      employeeId,
+      projectId,
+    } = req.body;
 
-    // ------------------------------------
-    // Find project
-    // ------------------------------------
-    const project = await Project.findById(projectId);
+    // ========================================
+    // Validate
+    // ========================================
+    if (!employeeId || !projectId) {
+      return res.status(400).json({
+        message:
+          "Employee ID and Project ID are required",
+      });
+    }
+
+    // ========================================
+    // Find Project
+    // ========================================
+    const project = await Project.findById(
+      projectId
+    );
 
     if (!project) {
       return res.status(404).json({
@@ -81,9 +179,9 @@ export const addMember = async (req, res) => {
       });
     }
 
-    // ------------------------------------
+    // ========================================
     // Only project owner can add members
-    // ------------------------------------
+    // ========================================
     if (
       project.createdBy.toString() !==
       req.user._id.toString()
@@ -94,11 +192,11 @@ export const addMember = async (req, res) => {
       });
     }
 
-    // ------------------------------------
+    // ========================================
     // Find member belonging to this admin
-    // ------------------------------------
+    // ========================================
     const employee = await User.findOne({
-      employeeId,
+      employeeId: employeeId.trim(),
       role: "Member",
       createdBy: req.user._id,
     });
@@ -110,9 +208,9 @@ export const addMember = async (req, res) => {
       });
     }
 
-    // ------------------------------------
+    // ========================================
     // Check if already added
-    // ------------------------------------
+    // ========================================
     if (
       project.members.some(
         (memberId) =>
@@ -126,9 +224,9 @@ export const addMember = async (req, res) => {
       });
     }
 
-    // ------------------------------------
+    // ========================================
     // Add existing member to project
-    // ------------------------------------
+    // ========================================
     await Project.updateOne(
       { _id: projectId },
       {
@@ -141,7 +239,14 @@ export const addMember = async (req, res) => {
     res.status(201).json({
       message:
         "Member Added To Project Successfully",
-      member: employee,
+
+      member: {
+        _id: employee._id,
+        employeeId: employee.employeeId,
+        fullName: employee.fullName,
+        email: employee.email,
+        role: employee.role,
+      },
     });
 
   } catch (error) {
@@ -151,7 +256,8 @@ export const addMember = async (req, res) => {
     );
 
     res.status(500).json({
-      message: error.message,
+      message: "Server Error",
+      error: error.message,
     });
   }
 };
@@ -175,7 +281,7 @@ export const getProjectMembers = async (req, res) => {
       });
     }
 
-    // Only project owner can access these members
+    // Only project owner can view members
     if (
       project.createdBy.toString() !==
       req.user._id.toString()
@@ -196,7 +302,8 @@ export const getProjectMembers = async (req, res) => {
     console.error(error);
 
     res.status(500).json({
-      message: error.message,
+      message: "Server Error",
+      error: error.message,
     });
   }
 };
@@ -207,7 +314,6 @@ export const getProjectMembers = async (req, res) => {
 // ========================================
 export const getAllMembers = async (req, res) => {
   try {
-
     const members = await User.find({
       role: "Member",
       createdBy: req.user._id,
@@ -218,7 +324,6 @@ export const getAllMembers = async (req, res) => {
     res.json(members);
 
   } catch (error) {
-
     console.log(
       "GET ALL MEMBERS ERROR:",
       error
@@ -236,15 +341,36 @@ export const getAllMembers = async (req, res) => {
 // ========================================
 export const getNextEmployeeId = async (req, res) => {
   try {
-
-    // Count only members created by this admin
-    const count = await User.countDocuments({
+    const members = await User.find({
       role: "Member",
       createdBy: req.user._id,
+      employeeId: {
+        $exists: true,
+        $ne: "",
+      },
+    }).select("employeeId");
+
+    let maxNumber = 0;
+
+    members.forEach((member) => {
+      const match = member.employeeId?.match(
+        /^EMP(\d+)$/
+      );
+
+      if (match) {
+        const number = parseInt(
+          match[1],
+          10
+        );
+
+        if (number > maxNumber) {
+          maxNumber = number;
+        }
+      }
     });
 
     const employeeId = `EMP${String(
-      count + 1
+      maxNumber + 1
     ).padStart(3, "0")}`;
 
     res.json({
@@ -252,7 +378,6 @@ export const getNextEmployeeId = async (req, res) => {
     });
 
   } catch (error) {
-
     console.log(
       "GET NEXT EMPLOYEE ID ERROR:",
       error
@@ -270,8 +395,6 @@ export const getNextEmployeeId = async (req, res) => {
 // ========================================
 export const updateMember = async (req, res) => {
   try {
-
-    // Member must belong to logged-in admin
     const member = await User.findOneAndUpdate(
       {
         _id: req.params.id,
@@ -298,7 +421,6 @@ export const updateMember = async (req, res) => {
     });
 
   } catch (error) {
-
     console.log(
       "UPDATE MEMBER ERROR:",
       error
@@ -316,8 +438,7 @@ export const updateMember = async (req, res) => {
 // ========================================
 export const deleteMember = async (req, res) => {
   try {
-
-    // Member must belong to logged-in admin
+    // Find member belonging to this admin
     const member = await User.findOne({
       _id: req.params.id,
       role: "Member",
@@ -356,7 +477,6 @@ export const deleteMember = async (req, res) => {
     });
 
   } catch (error) {
-
     console.log(
       "DELETE MEMBER ERROR:",
       error
@@ -370,16 +490,15 @@ export const deleteMember = async (req, res) => {
 
 
 // ========================================
-// Get All Team Members From All Projects
+// Get All Team Members
+// For Logged-in Employee
 // ========================================
 export const getMyTeamMembers = async (req, res) => {
   try {
-
-    // Use authenticated user instead of URL userId
+    // Use authenticated user
     const userId = req.user._id;
 
-    // Find all projects where current user
-    // is a member
+    // Find projects where current user is a member
     const projects = await Project.find({
       members: userId,
     }).populate(
@@ -391,7 +510,6 @@ export const getMyTeamMembers = async (req, res) => {
     const membersMap = new Map();
 
     projects.forEach((project) => {
-
       project.members.forEach((member) => {
 
         // Don't show logged-in member
@@ -406,7 +524,6 @@ export const getMyTeamMembers = async (req, res) => {
         }
 
       });
-
     });
 
     const members = Array.from(
@@ -416,7 +533,6 @@ export const getMyTeamMembers = async (req, res) => {
     res.json(members);
 
   } catch (error) {
-
     console.log(
       "GET MY TEAM MEMBERS ERROR:",
       error
@@ -434,8 +550,6 @@ export const getMyTeamMembers = async (req, res) => {
 // ========================================
 export const getMemberById = async (req, res) => {
   try {
-
-    // Member must belong to logged-in admin
     const member = await User.findOne({
       _id: req.params.id,
       role: "Member",
@@ -454,7 +568,6 @@ export const getMemberById = async (req, res) => {
     res.json(member);
 
   } catch (error) {
-
     console.log(
       "GET MEMBER BY ID ERROR:",
       error

@@ -1,6 +1,5 @@
 import express from "express";
 
-
 import {
   createMember,
   addMember,
@@ -18,60 +17,84 @@ import authMiddleware from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 // ========================================
-// Admin Routes
+// Get all members created by logged-in admin
 // ========================================
-
-router.post(
-  "/",
-  authMiddleware,
-  addMember
-);
-
 router.get(
   "/",
   authMiddleware,
   getAllMembers
 );
 
+// ========================================
+// Get next employee ID
+// ========================================
 router.get(
   "/next-id",
   authMiddleware,
   getNextEmployeeId
 );
 
+// ========================================
+// Get team members of logged-in employee
+// ========================================
 router.get(
-  "/:projectId",
+  "/user/:userId",
   authMiddleware,
-  getProjectMembers
+  getMyTeamMembers
 );
 
+// ========================================
+// Get single member
+// ========================================
+router.get(
+  "/member/:id",
+  authMiddleware,
+  getMemberById
+);
+
+// ========================================
+// Create New Member
+// ========================================
+router.post(
+  "/create",
+  authMiddleware,
+  createMember
+);
+
+// ========================================
+// Add Existing Member To Project
+// ========================================
+router.post(
+  "/",
+  authMiddleware,
+  addMember
+);
+
+// ========================================
+// Update Member
+// ========================================
 router.put(
   "/:id",
   authMiddleware,
   updateMember
 );
 
+// ========================================
+// Delete Member
+// ========================================
 router.delete(
   "/:id",
   authMiddleware,
   deleteMember
 );
 
-router.get(
-  "/:id",
-  authMiddleware,
-  getMemberById
-);
-
-
 // ========================================
-// Employee Route
+// Get Members Of Project
 // ========================================
-
 router.get(
-  "/user/:userId",
+  "/:projectId",
   authMiddleware,
-  getMyTeamMembers
+  getProjectMembers
 );
 
 export default router;
