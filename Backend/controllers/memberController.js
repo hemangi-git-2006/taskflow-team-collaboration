@@ -589,60 +589,96 @@ export const deleteMember = async (
 // ========================================
 // Get All Team Members
 // For Logged-in Employee
+// Includes All Shared Projects
 // ========================================
 export const getMyTeamMembers = async (
   req,
   res
 ) => {
   try {
-    const userId =
-      req.user._id;
+    const userId = req.user._id;
 
-    const projects =
-      await Project.find({
-        members:
-          userId,
-      }).populate(
-        "members",
-        "fullName email employeeId role profileImage"
-      );
-
-    const membersMap =
-      new Map();
-
-    projects.forEach(
-      (project) => {
-
-        project.members.forEach(
-          (member) => {
-
-            // Don't show logged-in member
-            if (
-              member._id.toString() !==
-              userId.toString()
-            ) {
-              membersMap.set(
-                member._id.toString(),
-                member
-              );
-            }
-
-          }
-        );
-
-      }
+    // ========================================
+    // Find all projects where logged-in user
+    // is a member
+    // ========================================
+    const projects = await Project.find({
+      members: userId,
+    }).populate(
+      "members",
+      "fullName email employeeId role profileImage"
     );
 
+    // ========================================
+    // Store members with their projects
+    // ========================================
+    const membersMap = new Map();
+
+    projects.forEach((project) => {
+      project.members.forEach((member) => {
+
+        // Don't show logged-in employee
+        if (
+          member._id.toString() ===
+          userId.toString()
+        ) {
+          return;
+        }
+
+        const memberId =
+          member._id.toString();
+
+        // ========================================
+        // If member doesn't exist in map
+        // create member object
+        // ========================================
+        if (!membersMap.has(memberId)) {
+          membersMap.set(memberId, {
+            _id: member._id,
+            fullName: member.fullName,
+            email: member.email,
+            employeeId: member.employeeId,
+            role: member.role,
+            profileImage: member.profileImage,
+            projects: [],
+          });
+        }
+
+        // ========================================
+        // Add current project
+        // ========================================
+        const existingMember =
+          membersMap.get(memberId);
+
+        const alreadyAdded =
+          existingMember.projects.some(
+            (existingProject) =>
+              existingProject._id.toString() ===
+              project._id.toString()
+          );
+
+        if (!alreadyAdded) {
+          existingMember.projects.push({
+            _id: project._id,
+            name: project.name,
+          });
+        }
+
+      });
+    });
+
+    // ========================================
+    // Convert Map to Array
+    // ========================================
     const members =
       Array.from(
         membersMap.values()
       );
 
-    res.json(
-      members
-    );
+    res.json(members);
 
   } catch (error) {
+
     console.log(
       "GET MY TEAM MEMBERS ERROR:",
       error
@@ -654,7 +690,6 @@ export const getMyTeamMembers = async (
     });
   }
 };
-
 
 // ========================================
 // Get Single Member By ID
