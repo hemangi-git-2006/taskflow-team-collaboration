@@ -111,7 +111,7 @@ function Comment() {
       {/* ================================= */}
       {/* MAIN CONTENT */}
       {/* ================================= */}
-      <main className="flex-1 min-w-0 min-h-screen p-6">
+      <main className="flex-1 min-w-0 min-h-screen p-6 lg:ml-64 pt-20 lg:pt-6">
 
         {/* Header */}
         <div className="mb-6">
