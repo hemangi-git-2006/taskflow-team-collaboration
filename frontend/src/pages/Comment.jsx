@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
-import EmployeeSidebar from "../components/dashboard/EmployeeSidebar";
+import EmployeeSidebar from "../components/employee/EmployeeSidebar";
 
 function Comment() {
   const [conversations, setConversations] = useState([]);
