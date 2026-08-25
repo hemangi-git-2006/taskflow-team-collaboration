@@ -38,7 +38,6 @@ const userSchema = new mongoose.Schema(
       default: "Member",
     },
 
-    // Member belongs to this Admin
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -60,9 +59,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// ========================================
-// Employee ID unique per Admin
-// ========================================
 userSchema.index(
   {
     createdBy: 1,
@@ -80,4 +76,7 @@ userSchema.index(
   }
 );
 
-export default mongoose.model("User", userSchema);
+export default mongoose.model(
+  "User",
+  userSchema
+);

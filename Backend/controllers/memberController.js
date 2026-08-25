@@ -3,12 +3,49 @@ import User from "../models/User.js";
 import Project from "../models/Project.js";
 
 // ========================================
+// Get Next Employee ID
+// ========================================
+const generateNextEmployeeId = async (adminId) => {
+  const members = await User.find({
+    role: "Member",
+    createdBy: adminId,
+    employeeId: {
+      $exists: true,
+      $ne: "",
+    },
+  }).select("employeeId");
+
+  let maxNumber = 0;
+
+  members.forEach((member) => {
+    const match = member.employeeId?.match(
+      /^EMP(\d+)$/
+    );
+
+    if (match) {
+      const number = parseInt(
+        match[1],
+        10
+      );
+
+      if (number > maxNumber) {
+        maxNumber = number;
+      }
+    }
+  });
+
+  return `EMP${String(
+    maxNumber + 1
+  ).padStart(3, "0")}`;
+};
+
+
+// ========================================
 // Create Member
 // ========================================
 export const createMember = async (req, res) => {
   try {
     const {
-      employeeId,
       fullName,
       email,
       password,
@@ -18,46 +55,30 @@ export const createMember = async (req, res) => {
     // Validate required fields
     // ========================================
     if (
-      !employeeId ||
       !fullName ||
       !email ||
       !password
     ) {
       return res.status(400).json({
         message:
-          "Employee ID, Full Name, Email and Password are required",
+          "Full Name, Email and Password are required",
       });
     }
 
-    // Logged-in admin
     const adminId = req.user._id;
 
-    // ========================================
-    // Check duplicate Employee ID
-    // ONLY for this admin
-    // ========================================
-    const existingEmployee =
-      await User.findOne({
-        employeeId:
-          employeeId.trim(),
-        role: "Member",
-        createdBy: adminId,
-      });
+    const cleanName =
+      fullName.trim();
 
-    if (existingEmployee) {
-      return res.status(400).json({
-        message:
-          "Employee ID already exists for your account",
-      });
-    }
+    const cleanEmail =
+      email.trim().toLowerCase();
 
     // ========================================
     // Check duplicate email
     // ========================================
     const existingEmail =
       await User.findOne({
-        email:
-          email.trim().toLowerCase(),
+        email: cleanEmail,
       });
 
     if (existingEmail) {
@@ -66,6 +87,14 @@ export const createMember = async (req, res) => {
           "Email already exists",
       });
     }
+
+    // ========================================
+    // Generate Employee ID automatically
+    // ========================================
+    const employeeId =
+      await generateNextEmployeeId(
+        adminId
+      );
 
     // ========================================
     // Hash password
@@ -81,21 +110,19 @@ export const createMember = async (req, res) => {
     // ========================================
     const member =
       await User.create({
-        employeeId:
-          employeeId.trim(),
+        employeeId,
 
         fullName:
-          fullName.trim(),
+          cleanName,
 
         email:
-          email
-            .trim()
-            .toLowerCase(),
+          cleanEmail,
 
         password:
           hashedPassword,
 
-        role: "Member",
+        role:
+          "Member",
 
         createdBy:
           adminId,
@@ -109,30 +136,34 @@ export const createMember = async (req, res) => {
         "Member Created Successfully",
 
       member: {
-        _id: member._id,
+        _id:
+          member._id,
+
         employeeId:
           member.employeeId,
+
         fullName:
           member.fullName,
+
         email:
           member.email,
+
         role:
           member.role,
       },
     });
 
   } catch (error) {
-
     console.log(
       "CREATE MEMBER ERROR:",
       error
     );
 
-    // Duplicate key protection
+    // Duplicate protection
     if (error.code === 11000) {
       return res.status(400).json({
         message:
-          "Employee ID or Email already exists",
+          "Employee ID or Email already exists. Please try again.",
       });
     }
 
@@ -160,12 +191,20 @@ export const addMember = async (req, res) => {
     // ========================================
     // Validate
     // ========================================
-    if (!employeeId || !projectId) {
+    if (
+      !employeeId ||
+      !projectId
+    ) {
       return res.status(400).json({
         message:
           "Employee ID and Project ID are required",
       });
     }
+
+    const cleanEmployeeId =
+      employeeId
+        .trim()
+        .toUpperCase();
 
     // ========================================
     // Find Project
@@ -196,14 +235,15 @@ export const addMember = async (req, res) => {
     }
 
     // ========================================
-    // Find member belonging to this admin
+    // Find existing member of this admin
     // ========================================
     const employee =
       await User.findOne({
         employeeId:
-          employeeId.trim(),
+          cleanEmployeeId,
 
-        role: "Member",
+        role:
+          "Member",
 
         createdBy:
           req.user._id,
@@ -233,11 +273,12 @@ export const addMember = async (req, res) => {
     }
 
     // ========================================
-    // Add existing member to project
+    // Add existing member
     // ========================================
     await Project.updateOne(
       {
-        _id: projectId,
+        _id:
+          projectId,
       },
       {
         $addToSet: {
@@ -270,7 +311,6 @@ export const addMember = async (req, res) => {
     });
 
   } catch (error) {
-
     console.log(
       "ADD MEMBER ERROR:",
       error
@@ -295,7 +335,6 @@ export const getProjectMembers = async (
   res
 ) => {
   try {
-
     const project =
       await Project.findById(
         req.params.projectId
@@ -311,7 +350,9 @@ export const getProjectMembers = async (
       });
     }
 
+    // ========================================
     // Only project owner can view members
+    // ========================================
     if (
       project.createdBy.toString() !==
       req.user._id.toString()
@@ -327,7 +368,6 @@ export const getProjectMembers = async (
     );
 
   } catch (error) {
-
     console.error(
       "========== GET PROJECT MEMBERS ERROR =========="
     );
@@ -353,10 +393,10 @@ export const getAllMembers = async (
   res
 ) => {
   try {
-
     const members =
       await User.find({
-        role: "Member",
+        role:
+          "Member",
 
         createdBy:
           req.user._id,
@@ -369,7 +409,6 @@ export const getAllMembers = async (
     );
 
   } catch (error) {
-
     console.log(
       "GET ALL MEMBERS ERROR:",
       error
@@ -385,48 +424,18 @@ export const getAllMembers = async (
 
 // ========================================
 // Get Next Employee ID
+// Used only for displaying the ID
+// in Create Member form
 // ========================================
-// ========================================
-// Get Next Available Employee ID
-// ========================================
-export const getNextEmployeeId = async (req, res) => {
+export const getNextEmployeeId = async (
+  req,
+  res
+) => {
   try {
-    const members = await User.find({
-      role: "Member",
-      createdBy: req.user._id,
-      employeeId: {
-        $exists: true,
-        $ne: "",
-      },
-    }).select("employeeId");
-
-    // Store existing employee numbers
-    const usedNumbers = new Set();
-
-    members.forEach((member) => {
-      const match = member.employeeId?.match(
-        /^EMP(\d+)$/
+    const employeeId =
+      await generateNextEmployeeId(
+        req.user._id
       );
-
-      if (match) {
-        usedNumbers.add(
-          parseInt(match[1], 10)
-        );
-      }
-    });
-
-    // Find the smallest available number
-    let nextNumber = 1;
-
-    while (
-      usedNumbers.has(nextNumber)
-    ) {
-      nextNumber++;
-    }
-
-    const employeeId = `EMP${String(
-      nextNumber
-    ).padStart(3, "0")}`;
 
     res.json({
       employeeId,
@@ -439,10 +448,12 @@ export const getNextEmployeeId = async (req, res) => {
     );
 
     res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
   }
 };
+
 
 // ========================================
 // Update Member
@@ -452,7 +463,6 @@ export const updateMember = async (
   res
 ) => {
   try {
-
     const member =
       await User.findOneAndUpdate(
         {
@@ -469,7 +479,8 @@ export const updateMember = async (
         req.body,
 
         {
-          new: true,
+          new:
+            true,
         }
       );
 
@@ -488,7 +499,6 @@ export const updateMember = async (
     });
 
   } catch (error) {
-
     console.log(
       "UPDATE MEMBER ERROR:",
       error
@@ -510,8 +520,6 @@ export const deleteMember = async (
   res
 ) => {
   try {
-
-    // Find member belonging to this admin
     const member =
       await User.findOne({
         _id:
@@ -531,8 +539,10 @@ export const deleteMember = async (
       });
     }
 
+    // ========================================
     // Remove member from all projects
     // owned by this admin
+    // ========================================
     await Project.updateMany(
       {
         createdBy:
@@ -550,7 +560,9 @@ export const deleteMember = async (
       }
     );
 
+    // ========================================
     // Delete member
+    // ========================================
     await User.findByIdAndDelete(
       member._id
     );
@@ -561,7 +573,6 @@ export const deleteMember = async (
     });
 
   } catch (error) {
-
     console.log(
       "DELETE MEMBER ERROR:",
       error
@@ -584,13 +595,9 @@ export const getMyTeamMembers = async (
   res
 ) => {
   try {
-
-    // Use authenticated user
     const userId =
       req.user._id;
 
-    // Find projects where current user
-    // is a member
     const projects =
       await Project.find({
         members:
@@ -600,7 +607,6 @@ export const getMyTeamMembers = async (
         "fullName email employeeId role profileImage"
       );
 
-    // Store unique members
     const membersMap =
       new Map();
 
@@ -615,12 +621,10 @@ export const getMyTeamMembers = async (
               member._id.toString() !==
               userId.toString()
             ) {
-
               membersMap.set(
                 member._id.toString(),
                 member
               );
-
             }
 
           }
@@ -639,7 +643,6 @@ export const getMyTeamMembers = async (
     );
 
   } catch (error) {
-
     console.log(
       "GET MY TEAM MEMBERS ERROR:",
       error
@@ -661,7 +664,6 @@ export const getMemberById = async (
   res
 ) => {
   try {
-
     const member =
       await User.findOne({
         _id:
@@ -688,7 +690,6 @@ export const getMemberById = async (
     );
 
   } catch (error) {
-
     console.log(
       "GET MEMBER BY ID ERROR:",
       error

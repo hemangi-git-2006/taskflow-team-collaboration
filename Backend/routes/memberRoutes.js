@@ -5,7 +5,6 @@ import {
   addMember,
   getProjectMembers,
   getAllMembers,
-  getNextEmployeeId,
   deleteMember,
   updateMember,
   getMyTeamMembers,
@@ -23,15 +22,6 @@ router.get(
   "/",
   authMiddleware,
   getAllMembers
-);
-
-// ========================================
-// Get next employee ID
-// ========================================
-router.get(
-  "/next-id",
-  authMiddleware,
-  getNextEmployeeId
 );
 
 // ========================================
