@@ -62,21 +62,24 @@ function EditMemberModal({
 
           {/* Employee ID */}
 
-          <div>
+     {/* Employee ID */}
 
-            <label className="block mb-2 font-medium text-slate-700">
-              Employee ID
-            </label>
+<div>
+  <label className="block mb-2 font-medium text-slate-700">
+    Employee ID
+  </label>
 
-            <input
-              type="text"
-              value={form.employeeId}
-              readOnly
-              className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 text-slate-600 cursor-not-allowed"
-            />
-
-          </div>
-
+  <input
+    type="text"
+    value={formData.employeeId || ""}
+    readOnly
+    disabled
+    tabIndex={-1}
+    autoComplete="off"
+    placeholder="Generating..."
+    className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 text-slate-500 cursor-not-allowed"
+  />
+</div>
           {/* Full Name */}
 
           <div>

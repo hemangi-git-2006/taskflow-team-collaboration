@@ -139,10 +139,9 @@ function App() {
         {/* ========================= */}
 
         <Route
-          path="*"
-          element={<Navigate to="/" replace />}
-        />
-
+  path="*"
+  element={<NotFound />}
+/>
       </Routes>
     </BrowserRouter>
   );

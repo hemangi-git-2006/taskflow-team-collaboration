@@ -36,26 +36,54 @@ function Login() {
       };
 
       if (loginAs === "Admin") {
-        payload.email = formData.email;
+        payload.email = formData.email
+          .trim()
+          .toLowerCase();
       } else {
-        payload.employeeId = formData.employeeId;
+        payload.employeeId = formData.employeeId
+          .trim()
+          .toUpperCase();
       }
 
-      const res = await API.post("/auth/login", payload);
+      const res = await API.post(
+        "/auth/login",
+        payload
+      );
 
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem(
+        "token",
+        res.data.token
+      );
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(res.data.user)
+      );
+
+      localStorage.setItem(
+        "role",
+        res.data.user.role
+      );
 
       alert("Login Successful");
 
-    if (res.data.user.role === "Admin") {
-  navigate("/dashboard");
-} else {
-  navigate("/employee-dashboard");
-}
+      if (res.data.user.role === "Admin") {
+        navigate("/dashboard");
+      } else {
+        navigate("/employee-dashboard");
+      }
 
     } catch (error) {
-      alert(error.response?.data?.message || "Login Failed");
+      console.log(
+        "LOGIN ERROR:",
+        error
+      );
+
+      alert(
+        error.response?.data?.message ||
+        "Login Failed"
+      );
+
     } finally {
       setLoading(false);
     }
@@ -74,7 +102,10 @@ function Login() {
           Login to your TaskFlow account
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-5 mt-8">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5 mt-8"
+        >
 
           {/* Login As */}
           <div>
@@ -84,11 +115,18 @@ function Login() {
 
             <select
               value={loginAs}
-              onChange={(e) => setLoginAs(e.target.value)}
+              onChange={(e) =>
+                setLoginAs(e.target.value)
+              }
               className="w-full border rounded-lg px-4 py-3"
             >
-              <option value="Admin">Admin</option>
-              <option value="Member">Member</option>
+              <option value="Admin">
+                Admin
+              </option>
+
+              <option value="Member">
+                Member
+              </option>
             </select>
           </div>
 
@@ -136,7 +174,11 @@ function Login() {
             <div className="relative">
 
               <input
-                type={showPassword ? "text" : "password"}
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
@@ -146,10 +188,18 @@ function Login() {
 
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() =>
+                  setShowPassword(
+                    !showPassword
+                  )
+                }
                 className="absolute right-4 top-4"
               >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                {showPassword ? (
+                  <FaEyeSlash />
+                ) : (
+                  <FaEye />
+                )}
               </button>
 
             </div>
@@ -160,7 +210,9 @@ function Login() {
             disabled={loading}
             className="w-full bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700"
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading
+              ? "Logging in..."
+              : "Login"}
           </button>
 
         </form>

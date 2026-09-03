@@ -14,45 +14,99 @@ export const register = async (req, res) => {
       password,
     } = req.body;
 
-    const existingUser = await User.findOne({ email });
-
-    if (existingUser) {
+    if (
+      !fullName ||
+      !email ||
+      !password
+    ) {
       return res.status(400).json({
-        message: "Email already exists",
+        message:
+          "Full Name, Email and Password are required",
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const normalizedEmail =
+      email.trim().toLowerCase();
 
-    const user = await User.create({
-      fullName,
-      companyName,
-      email,
-      password: hashedPassword,
-      role: "Admin",
-    });
+    const existingUser =
+      await User.findOne({
+        email:
+          normalizedEmail,
+      });
 
-    const { password: userPassword, ...userData } = user._doc;
+    if (existingUser) {
+      return res.status(400).json({
+        message:
+          "Email already exists",
+      });
+    }
+
+    const hashedPassword =
+      await bcrypt.hash(
+        password,
+        10
+      );
+
+    const user =
+      await User.create({
+        fullName:
+          fullName.trim(),
+
+        companyName:
+          companyName
+            ? companyName.trim()
+            : "",
+
+        email:
+          normalizedEmail,
+
+        password:
+          hashedPassword,
+
+        role:
+          "Admin",
+      });
+
+    const {
+      password: userPassword,
+      ...userData
+    } = user._doc;
 
     res.status(201).json({
-      message: "Admin Registered Successfully",
-      user: userData,
+      message:
+        "Admin Registered Successfully",
+
+      user:
+        userData,
     });
 
   } catch (error) {
-    console.log(error);
+    console.log(
+      "REGISTER ERROR:",
+      error
+    );
+
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message:
+          "Email already exists",
+      });
+    }
 
     res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
   }
 };
 
+
 // ======================
-// Login (Admin / Member)
+// Login Admin / Member
 // ======================
 export const login = async (req, res) => {
   try {
+     console.log("🔥 LOGIN API HIT", req.body);
     const {
       loginAs,
       email,
@@ -60,71 +114,210 @@ export const login = async (req, res) => {
       password,
     } = req.body;
 
-    let user;
-
-    // Admin Login
-    if (loginAs === "Admin") {
-      user = await User.findOne({
-        email,
-        role: "Admin",
-      });
-
-      if (!user) {
-        return res.status(400).json({
-          message: "Admin not found",
-        });
-      }
-    }
-
-    // Member Login
-    else {
-      user = await User.findOne({
-        employeeId,
-        role: "Member",
-      });
-
-      if (!user) {
-        return res.status(400).json({
-          message: "Invalid Employee ID",
-        });
-      }
-    }
-
-    const isMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
-
-    if (!isMatch) {
+    if (!password) {
       return res.status(400).json({
-        message: "Invalid Password",
+        message:
+          "Password is required",
       });
     }
 
-    const token = jwt.sign(
-      {
-        id: user._id,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "7d",
-      }
-    );
+    let user = null;
 
-    const { password: userPassword, ...userData } = user._doc;
+    // ========================================
+    // Admin Login
+    // ========================================
+    if (
+      loginAs === "Admin"
+    ) {
+
+      if (!email) {
+        return res.status(400).json({
+          message:
+            "Email is required",
+        });
+      }
+
+      const normalizedEmail =
+        email.trim().toLowerCase();
+
+      user =
+        await User.findOne({
+          email:
+            normalizedEmail,
+
+          role:
+            "Admin",
+        });
+
+      if (!user) {
+        return res.status(400).json({
+          message:
+            "Admin not found",
+        });
+      }
+
+    }
+
+    // ========================================
+    // Member Login
+    // ========================================
+    else if (
+      loginAs === "Member"
+    ) {
+
+      if (!employeeId) {
+        return res.status(400).json({
+          message:
+            "Employee ID is required",
+        });
+      }
+
+      const normalizedEmployeeId =
+        employeeId
+          .trim()
+          .toUpperCase();
+
+      const users =
+        await User.find({
+          employeeId:
+            normalizedEmployeeId,
+
+          role:
+            "Member",
+        });
+       console.log("========== MEMBER LOGIN ==========");
+console.log("Employee ID:", normalizedEmployeeId);
+console.log("Matching users:", users.length);
+
+users.forEach((candidate) => {
+  console.log(
+    "Member:",
+    candidate.fullName,
+    candidate.email,
+    candidate.employeeId
+  );
+});
+
+      if (
+        !users ||
+        users.length === 0
+      ) {
+        return res.status(400).json({
+          message:
+            "Invalid Employee ID",
+        });
+      }
+
+      let matchedUser = null;
+
+      for (
+        const candidate of users
+      ) {
+
+        if (
+          !candidate.password
+        ) {
+          continue;
+        }
+
+        const isMatch =
+          await bcrypt.compare(
+            password,
+            candidate.password
+          );
+
+        if (isMatch) {
+          matchedUser =
+            candidate;
+          break;
+        }
+      }
+
+      if (!matchedUser) {
+        return res.status(400).json({
+          message:
+            "Invalid Password",
+        });
+      }
+
+      user =
+        matchedUser;
+
+    }
+
+    else {
+      return res.status(400).json({
+        message:
+          "Invalid login type",
+      });
+    }
+
+    // ========================================
+    // Admin password check
+    // ========================================
+    if (
+      loginAs === "Admin"
+    ) {
+      const isMatch =
+        await bcrypt.compare(
+          password,
+          user.password
+        );
+
+      if (!isMatch) {
+        return res.status(400).json({
+          message:
+            "Invalid Password",
+        });
+      }
+    }
+
+    // ========================================
+    // JWT
+    // ========================================
+    const token =
+      jwt.sign(
+        {
+          id:
+            user._id,
+
+          role:
+            user.role,
+        },
+
+        process.env.JWT_SECRET,
+
+        {
+          expiresIn:
+            "7d",
+        }
+      );
+
+    // Remove password
+    const {
+      password: userPassword,
+      ...userData
+    } = user._doc;
 
     res.status(200).json({
-      message: "Login Successful",
+      message:
+        "Login Successful",
+
       token,
-      user: userData,
+
+      user:
+        userData,
     });
 
   } catch (error) {
-    console.log(error);
+    console.log(
+      "LOGIN ERROR:",
+      error
+    );
 
     res.status(500).json({
-      message: "Server Error",
+      message:
+        "Server Error",
     });
   }
 };
